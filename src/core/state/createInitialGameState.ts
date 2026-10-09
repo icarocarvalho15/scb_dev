@@ -4,10 +4,12 @@ import {
   CardType,
   Keyword,
 } from '../types/card';
+import { GameEventType } from '../types/event';
+import { EffectType, EffectTargetScope, TriggerCondition } from '../types/effect';
 import { CardZone } from '../types/zone';
 import { GamePhase } from '../types/phase';
 import { PlayerId, PlayerState, RepresentativeState } from '../types/player';
-import { DebateState, GameState, GameStatus } from '../types/state';
+import { CombatState, DebateState, GameState, GameStatus } from '../types/state';
 
 /**
  * Representante padrão de referência 1 (Daichi - Atleta)
@@ -25,6 +27,22 @@ export const DEFAULT_REPRESENTATIVE_DAICHI: CardDefinition = {
   popularityRequirement: 3,
   highlightCost: 5,
   text: 'Ganha Popularidade quando um Estudante aliado declara um ataque. Destaque (5): Estudantes aliados recebem +1/+1 este turno.',
+  triggers: [
+    {
+      id: 'trigger_daichi_popularity_on_ally_attack',
+      event: GameEventType.STUDENT_ATTACKED,
+      condition: TriggerCondition.ON_ALLY_ATTACK,
+      targetScope: 'ALLY',
+      effects: [
+        {
+          type: EffectType.GAIN_POPULARITY,
+          target: EffectTargetScope.OWNER_REPRESENTATIVE,
+          amount: 1,
+        },
+      ],
+      description: 'Ganha 1 de Popularidade quando um Estudante aliado declara um ataque.',
+    },
+  ],
 };
 
 /**
@@ -43,6 +61,22 @@ export const DEFAULT_REPRESENTATIVE_AKIRA: CardDefinition = {
   popularityRequirement: 3,
   highlightCost: 5,
   text: 'Ganha Popularidade quando um Debate é resolvido. Destaque (5): Estudantes adversários perdem habilidades.',
+  triggers: [
+    {
+      id: 'trigger_akira_popularity_on_debate_resolved',
+      event: GameEventType.DEBATE_RESOLVED,
+      condition: TriggerCondition.ON_DEBATE_RESOLVED,
+      targetScope: 'ANY',
+      effects: [
+        {
+          type: EffectType.GAIN_POPULARITY,
+          target: EffectTargetScope.OWNER_REPRESENTATIVE,
+          amount: 1,
+        },
+      ],
+      description: 'Ganha 1 de Popularidade quando um Debate é resolvido.',
+    },
+  ],
 };
 
 /**
@@ -268,6 +302,11 @@ export function createInitialGameState(
     actions: [],
   };
 
+  const initialCombat: CombatState = {
+    active: false,
+    attacks: [],
+  };
+
   return {
     matchId,
     turn: 1,
@@ -279,6 +318,7 @@ export function createInitialGameState(
       [p2Config.id]: p2State,
     },
     debate: initialDebate,
+    combat: initialCombat,
     stack: [],
     winnerId: null,
     rngSeed,

@@ -484,7 +484,11 @@ A regra permanece válida mesmo quando o Estudante possui Impulso ou Infiltraç�
 
 Após os atacantes serem declarados, o jogador defensor escolhe os bloqueadores.
 
-Durante a declaração de bloqueadores, cada Estudante defensor pode bloquear no máximo 1 atacante. Um atacante pode possuir no máximo 1 bloqueador.
+Bloqueio Livre: Qualquer Estudante em campo pode ser declarado como bloqueador para interceptar um ataque, seja esse ataque direcionado ao Representante ou a outro Estudante. O ato de bloquear NÃO é uma habilidade exclusiva de nenhuma Keyword.
+
+Durante a declaração de bloqueadores:
+* Cada Estudante defensor pode bloquear no máximo 1 atacante.
+* Um atacante pode possuir no máximo 1 bloqueador.
 
 ---
 
@@ -550,16 +554,11 @@ Deve ser parte do sistema geral de validação de alvos.
 
 # 35. Guarda
 
-Guarda permite interceptar ataques direcionados ao Representante.
+Guarda é uma Keyword que interage com a declaração de bloqueadores.
 
-Quando um ataque válido seria direcionado ao Representante:
+Como qualquer Estudante pode bloquear livremente, a Guarda serve como um "guarda-costas" do Representante, mas como se pudesse escolher o "momento exato de lutar". 
 
-1. verificar Estudantes com Guarda;
-2. determinar quais podem interceptar;
-3. permitir a escolha conforme as regras do combate;
-4. redirecionar o ataque para o Estudante que realiza a Guarda.
-
-Guarda não deve alterar permanentemente o alvo da carta fora daquela resolução de combate.
+A Guarda NÃO é um requisito obrigatório para proteger o Representante.
 
 ---
 

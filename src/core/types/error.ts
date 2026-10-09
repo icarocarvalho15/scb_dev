@@ -15,10 +15,15 @@ export enum ActionErrorCode {
   DIPLOMACY_RESTRICTION = 'DIPLOMACY_RESTRICTION',
   INERTIA_RESTRICTION = 'INERTIA_RESTRICTION',
   DEBATE_CHAIN_FULL = 'DEBATE_CHAIN_FULL',
+  DEBATE_NOT_ACTIVE = 'DEBATE_NOT_ACTIVE',
+  DEBATE_ALREADY_ACTIVE = 'DEBATE_ALREADY_ACTIVE',
+  NOT_DEBATE_CARD = 'NOT_DEBATE_CARD',
   HIGHLIGHT_NOT_AVAILABLE = 'HIGHLIGHT_NOT_AVAILABLE',
   MULLIGAN_ALREADY_USED = 'MULLIGAN_ALREADY_USED',
   HAND_LIMIT_EXCEEDED = 'HAND_LIMIT_EXCEEDED',
   DECK_EMPTY = 'DECK_EMPTY',
+  PROTECTION_RESTRICTION = 'PROTECTION_RESTRICTION',
+  SILENCE_RESTRICTION = 'SILENCE_RESTRICTION',
   GAME_OVER = 'GAME_OVER',
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
@@ -36,5 +41,5 @@ export interface ActionError {
  * Resultado da execução de uma ação pela engine
  */
 export type ActionResult<T = unknown> =
-  | { success: true; state: T }
+  | { success: true; state: T; events?: import('./event').GameEvent[] }
   | { success: false; error: ActionError };

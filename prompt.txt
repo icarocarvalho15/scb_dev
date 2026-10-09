@@ -1,0 +1,58 @@
+Assuma as responsabilidades conjuntas de Debate Engineer e Rules Engineer conforme definidos em @docs/agents/SCB_Debate_Engineer.md e @docs/agents/SCB_Rules_Engineer.md.
+
+Missão: Fase 7 — Debate System (Sistema e Cadeia de Debates)
+
+Agente Designado: Debate Engineer (@docs/agents/SCB_Debate_Engineer.md) com suporte do Rules Engineer (@docs/agents/SCB_Rules_Engineer.md).
+
+Diretiva de Delegação (Briefing Formal)
+
+Contexto & Leitura Obrigatória:
+@docs/rules/SCB_Rules.md (Seção 22: Debates, e Seção 10: Ordem do Turno).
+
+@docs/rules/SCB_Architecture.md (Seção 5: GameState, e Seção 15: Actions e Resolução).
+
+@docs/agents/SCB_Debate_Engineer.md e @docs/agents/SKILL.md.
+
+Objetivo da Missão:
+Implementar a infraestrutura determinística da Debate Phase, gerenciando a pilha de debate (Debate Stack), alternância de respostas entre jogador ativo e oponente, limite de ações e resolução estrita LIFO (Last In, First Out).
+
+Escopo da Implementação:
+Estrutura da Cadeia de Debate:
+Ação Inicial (iniciada pelo jogador ativo na DebatePhase ou por resposta a cartas de Debate);
+Réplica (oponente responde);
+Tréplica (jogador ativo responde);
+Contrarréplica (oponente responde).
+Teto Alpha: Limite estrito de no máximo 4 ações na cadeia.
+Ação de Passar (PASS_DEBATE / Pass):
+Se um jogador optar por não responder (ou se ambos passarem consecutivamente), a pilha de debate fecha e inicia a resolução.
+
+Resolução em Pilha LIFO:
+Ordem inversa de execução: Contrarréplica -> Tréplica -> Réplica -> Ação Inicial.
+
+Invalidação Parcial de Alvo (Target Invalidation):
+Conforme regra oficial, se o alvo de um efeito se tornar inválido antes da resolução (ex: unidade removida ou protegida), apenas o efeito dependente daquele alvo falha (fizzle); efeitos secundários independentes da mesma carta resolvem normalmente.
+
+Respeito a Proteção:
+Alvos com Keyword.PROTECAO não podem ser alvejados por cartas ou habilidades de debate.
+
+Restrições Arquiteturais:
+Toda a cadeia de debate deve operar de forma 100% pura na engine, sem qualquer dependência de React ou DOM.
+O estado da pilha (DebateState) deve residir explicitamente dentro de GameState.debate.
+
+Arquivos Alvo:
+src/core/engine/debateSystem.ts (novo motor da pilha de debates).
+
+src/core/engine/gameEngine.ts (integração das ações START_DEBATE, RESPOND_DEBATE, RESOLVE_DEBATE).
+
+src/core/types/ (payloads de ações e tipagem de DebateState se necessário).
+
+src/cards/alphaCards.ts (adicionar cartas de debate de exemplo para os testes).
+
+tests/core/debateSystem.test.ts (suíte completa de testes unitários).
+
+Critérios de Aceite:
+Simulação completa de cadeias de debate de 1 a 4 níveis com resolução LIFO determinística.
+Testes cobrindo: início de debate, réplica, tréplica, contrarréplica, rejeição da 5ª ação (limite atingido), passe consecutivo, invalidação parcial de alvos e respeito a cartas com Proteção.
+100% de testes verdes e npm run test, npm run typecheck e npm run build limpos.
+
+Instruções de Execução: Pense passo a passo. Implemente o código necessário focando no Princípio Engine First e na Imutabilidade Estrita. Quando terminar e os testes estiverem passando, responda estritamente com o relatório de conclusão no formato exigido.

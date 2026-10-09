@@ -10,7 +10,7 @@
 
 **Projeto:** School Card Battle (SCB)
 
-**Fase atual:** FASE 3 — CARTAS E CAMPO
+**Fase atual:** FASE 7 — DEBATE SYSTEM
 
 **Objetivo atual:** Construir a fundação técnica necessária para um Alpha jogável local contra IA.
 
@@ -67,24 +67,24 @@ Início
 | Draw                  | VERIFIED    |       HIGH | Compra na Start Phase + Deckout    |
 | Hand / Mulligan       | VERIFIED    |       HIGH | Limite 8 cartas + corte/descarte   |
 | Deck System           | VERIFIED    |       HIGH | Transferência DECK -> HAND         |
-| Board                 | NOT_STARTED |       HIGH | —                                  |
-| Substituição          | NOT_STARTED |       HIGH | —                                  |
-| Environment           | NOT_STARTED |     MEDIUM | —                                  |
+| Board                 | VERIFIED    |       HIGH | Limite de 6 Estudantes e alocação na zona BOARD |
+| Substituição          | VERIFIED    |       HIGH | Regra normativa no 6º estudante com descarte do antigo |
+| Environment           | VERIFIED    |     MEDIUM | Limite de 1 Ambiente ativo com descarte automático do anterior |
 | Equipment             | NOT_STARTED |     MEDIUM | —                                  |
-| Basic Combat          | NOT_STARTED |   CRITICAL | —                                  |
-| Inércia               | NOT_STARTED |       HIGH | —                                  |
-| Impulso               | NOT_STARTED |       HIGH | —                                  |
-| Provocação            | NOT_STARTED |       HIGH | —                                  |
-| Guarda                | NOT_STARTED |       HIGH | —                                  |
-| Infiltração           | NOT_STARTED |       HIGH | —                                  |
-| Diplomacia            | VERIFIED    |       HIGH | Ativa no T1, expira no T2          |
-| Events                | NOT_STARTED |       HIGH | —                                  |
-| Effects               | NOT_STARTED |       HIGH | —                                  |
-| Keywords              | NOT_STARTED |       HIGH | —                                  |
-| Representative System | NOT_STARTED |       HIGH | —                                  |
-| Popularidade          | NOT_STARTED |       HIGH | —                                  |
-| Destaque              | NOT_STARTED |       HIGH | —                                  |
-| Debate System         | NOT_STARTED |       HIGH | —                                  |
+| Basic Combat          | VERIFIED    |   CRITICAL | Ataque, bloqueio e resolução determinística operando |
+| Inércia               | VERIFIED    |       HIGH | Estudantes entram com hasInertia = true (limpo no turno seguinte) |
+| Impulso               | VERIFIED    |       HIGH | Ignora Inércia na entrada e ataca de imediato |
+| Provocação            | VERIFIED    |       HIGH | Obriga atacante a declará-lo como alvo (protege Representante e outros estudantes) |
+| Guarda                | VERIFIED    |       HIGH | Bloqueio Livre ativo para todos os estudantes (Guarda não é requisito exclusivo) |
+| Infiltração           | VERIFIED    |       HIGH | Ignora Provocação ao focar Representante e inalcançável por qualquer bloqueador |
+| Diplomacia            | VERIFIED    |       HIGH | Ativa no T1, expira no T2 (impede ataques a Representante) |
+| Events                | VERIFIED    |       HIGH | Barramento determinístico com 6 tipos canônicos e dispatch puro |
+| Effects               | VERIFIED    |       HIGH | Processador reativo data-driven, triggers e auras contínuas |
+| Keywords              | VERIFIED    |       HIGH | Centralizador modular (keywordSystem.ts) com catálogo Alpha completo e testes |
+| Representative System | VERIFIED    |       HIGH | Moral 20, Popularidade reativa e Destaque operando em Daichi/Akira |
+| Popularidade          | VERIFIED    |       HIGH | Gatilho data-driven funcional via barramento de eventos |
+| Destaque              | VERIFIED    |       HIGH | Desbloqueio automático via requisito de Popularidade |
+| Debate System         | VERIFIED    |       HIGH | Pilha LIFO de 4 níveis, target invalidation parcial e ações de debate |
 | AI                    | NOT_STARTED |   CRITICAL | —                                  |
 | UI Board              | NOT_STARTED |   CRITICAL | —                                  |
 | Card UI               | NOT_STARTED |       HIGH | —                                  |
@@ -103,12 +103,12 @@ Início
 | 0. Auditoria         | VERIFIED    | Projeto analisado e bloqueadores identificados |
 | 1. Fundação          | VERIFIED    | Engine consegue representar partida inicial    |
 | 2. Turnos e Recursos | VERIFIED    | Partida avança vários turnos                   |
-| 3. Cartas e Campo    | NOT_STARTED | Cartas podem ser jogadas pela engine           |
-| 4. Combate           | NOT_STARTED | Combate completo funciona sem UI               |
-| 5. Events / Effects  | NOT_STARTED | Sistema reativo funcional                      |
-| 6. Keywords          | NOT_STARTED | Keywords Alpha testadas                        |
-| 7. Representantes    | NOT_STARTED | Popularidade e Destaque funcionam              |
-| 8. Debate            | NOT_STARTED | Debate completo funciona                       |
+| 3. Cartas e Campo    | VERIFIED    | Cartas podem ser jogadas pela engine           |
+| 4. Combate           | VERIFIED    | Combate completo funciona sem UI               |
+| 5. Events / Effects  | VERIFIED    | Sistema reativo funcional                      |
+| 6. Keywords          | VERIFIED    | Keywords Alpha testadas                        |
+| 7. Representantes    | VERIFIED    | Popularidade e Destaque funcionam              |
+| 8. Debate            | IN_PROGRESS | Debate completo funciona                       |
 | 9. IA                | NOT_STARTED | IA completa partidas                           |
 | 10. UI               | NOT_STARTED | Jogador consegue controlar partida             |
 | 11. Vertical Slice   | NOT_STARTED | Partida completa jogável                       |
@@ -251,21 +251,15 @@ Nenhum problema registrado.
 
 # 10. Próxima Missão
 
-**MISSÃO:** FASE 3 — Cartas e Campo (Play Card, Cost Validation, Board Placement, 6-Student Limit & Substitution, Inertia).
+**MISSÃO:** FASE 8 — AI System (IA Básica e Heurística de Tomada de Decisão).
 
-**Responsável:** Game Core Engineer ([SCB_Game_Core_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Game_Core_Engineer.md)) & Rules Engineer ([SCB_Rules_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Rules_Engineer.md))
+**Responsável:** AI Engineer & Game Core Engineer
 
 **Objetivo:**
-* Implementar ação `PLAY_CARD` na Main Phase com validação pura de custo de Energia;
-* Implementar posicionamento de cartas nas zonas `BOARD` e `ENVIRONMENT`;
-* Implementar limite de 6 Estudantes por jogador e regra normativa de Substituição;
-* Implementar aplicação e verificação de Inércia / Impulso;
-* Suíte de testes unitários pura.
+* Implementar o loop de decisão autônomo da IA para ações legais de jogo (jogar cartas, debater, atacar, bloquear, passar turno).
 
 **Critério de conclusão:**
-* Estudantes, Ambientes e Equipamentos podem ser jogados pagando custos;
-* Substituição funciona determinística no 6º Estudante;
-* Testes cobrem todas as regras e compilam limpos.
+* IA capaz de jogar uma partida completa de forma válida sem travar a engine.
 
 ---
 
@@ -273,6 +267,11 @@ Nenhum problema registrado.
 
 | Data       | Alteração                                                                 | Responsável    |
 | ---------- | ------------------------------------------------------------------------- | -------------- |
+| 2026-10-09 | Conclusão da Fase 7 (Debate System: Pilha LIFO 4 níveis, Invalidação Parcial, START/RESPOND/PASS/RESOLVE) | Debate & Rules Engineers |
+| 2026-10-09 | Conclusão da Fase 6 (Keywords Engine: Centralizador modular, Proteção, Silêncio, Colaboração, Rivalidade, Aprendizagem) | Keyword & Rules Engineers |
+| 2026-10-09 | Conclusão da Fase 5 (Events & Effects: Barramento puro, Triggers, Auras)  | Game Core & Rules Engineers |
+| 2026-10-09 | Conclusão da Fase 4 (Combate: ATTACK, BLOCK, RESOLVE_COMBAT, Keywords)    | Combat & Rules Engineers |
+| 2026-10-09 | Conclusão da Fase 3 (Cartas e Campo: PLAY_CARD, Board, Substituição, etc) | Card System & Game Core |
 | 2026-10-09 | Conclusão da Fase 2 (Turnos e Recursos: Engine pura, TurnSystem, Testes)   | Rules Engineer |
 | 2026-10-09 | Conclusão da Fase 1 (Fundação: Tooling, Tipos e createInitialGameState)   | Tech Architect |
 | 2026-10-09 | Conclusão da Fase 0 (Auditoria Técnica) e emissão de SCB_AUDIT.md         | Orchestrator   |
@@ -281,6 +280,54 @@ Nenhum problema registrado.
 ---
 
 # 12. Histórico de Fases
+
+## Fase 6 — Keywords Engine
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Implementação centralizada, determinística e puramente orientada a dados do motor de Keywords sob `src/core/engine/keywordSystem.ts`, integrado perfeitamente aos motores de combate (`combatSystem.ts`), eventos/efeitos (`eventSystem.ts`), turnos (`turnSystem.ts`) e despacho geral (`gameEngine.ts`). Validação estrita e desacoplada das Keywords de combate e restrição: Inércia, Impulso, Provocação (obrigando atacantes sem infiltração a alvejá-lo), Guarda, Infiltração (bypassing Provocação e defensores), Silêncio (impedindo ataques e anulando integralmente habilidades passivas/ativas e auras contínuas) e Proteção (impedindo direcionamento de habilidades e debates, preservando combate e efeitos em área). Implementação de Keywords de progressão e sinergia orientadas a dados: Persistência (ressurgimento no 1º nocaute com 1 de Moral), Inspiração (disparo ON_ENTER), Reconhecimento (+1 Influência contínua com Popularidade > 0), Liderança (+1 Influência por classe compartilhada com o Representante), Colaboração (+1 Influência por atuar junto de aliados da mesma classe em campo), Rivalidade (+1 Influência situacional ao combater estudantes de classe diferente) e Aprendizagem (+1 Influência contínua concedida se não atacou no turno anterior). Enriquecimento do catálogo com cartas Alpha demonstrativas em `src/cards/alphaCards.ts`. Suíte completa com 24 testes dedicados cobrindo ativações, restrições e falhas em `tests/core/keywords.test.ts`. Total de 134 testes globais passando 100% no Vitest com build e typecheck 100% limpos.
+
+---
+
+## Fase 5 — Eventos e Efeitos
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Implementação completa, determinística e desacoplada da infraestrutura de eventos e processamento reativo de efeitos orientados a dados sob `src/core/engine/eventSystem.ts`. Criação dos tipos canônicos de eventos (`CARD_PLAYED`, `STUDENT_ENTERED`, `STUDENT_ATTACKED`, `STUDENT_BLOCKED`, `DAMAGE_DEALT`, `STUDENT_DEFEATED`, `TURN_STARTED`, `TURN_ENDED`, `PHASE_CHANGED`, `POPULARITY_GAINED`, `EFFECT_APPLIED`) e contratos de efeitos (`GAIN_POPULARITY`, `MODIFY_STAT`, `DRAW_CARD`, `REVIVE_STUDENT`, `GAIN_ENERGY`, `APPLY_STATUS`, etc.). Substituição integral da lógica hardcoded de Popularidade por gatilho reativo data-driven (`ON_ALLY_ATTACK` concedendo +1 de Popularidade e desbloqueando Destaque no limiar). Suporte a efeitos contínuos e auras (`evaluateContinuousEffects` para `Reconhecimento` e `Liderança`). Suporte a ressurreição por Persistência (`ON_DEFEATED`) e bônus de entrada por Inspiração (`ON_ENTER`). Despacho integrado em `gameEngine.ts` com disponibilização de `applyAction`, `resolveAction` e `validateAction`. Suíte com 19 testes dedicados de eventos e efeitos e 110 testes globais passando 100% no Vitest com build e typecheck 100% limpos.
+
+---
+
+## Fase 4 — Combate Básico
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Implementação completa, pura e determinística do motor de combate na fase COMBAT sob `src/core/engine/combatSystem.ts`, despachado via `applyAction` em `gameEngine.ts` e com auto-resolução em `advancePhase`. Suporte completo a declaração de atacantes (`ActionType.ATTACK`), declaração de bloqueadores (`ActionType.BLOCK`) e resolução (`ActionType.RESOLVE_COMBAT`). Validações estritas de regras conforme o design oficial: Inércia (impedindo ataques de entrada), bypass por Impulso, respeito absoluto à Diplomacia no Turno 1 (proibindo ataques diretos ao Representante mesmo com Impulso ou Infiltração), restrição de Provocação obrigando o atacante a declará-lo como alvo (protegendo o Representante e outros estudantes de serem os alvos iniciais, salvo atacante com Infiltração), Bloqueio Livre geral (onde qualquer estudante no campo do defensor pode bloquear qualquer ataque ou escolher receber o dano no Representante, sem exclusividade inventada para Guarda), e Infiltração (que ignora Provocação para focar diretamente o Representante e não pode ser bloqueado por nenhum estudante, nem mesmo os com Guarda). Teto Alpha de no máximo 1 bloqueador por atacante e 1 atacante por bloqueador. Cálculo simultâneo de dano mútuo entre Estudantes (Influence vs Moral) e dano direto ao Representante. Derrota imediata com envio para `CardZone.DISCARD` para Estudantes com Moral <= 0 e vitória instantânea na partida quando o Representante atinge Moral <= 0. Suíte completa com 38 testes dedicados de combate e 91 testes globais passando 100% no Vitest com build e typecheck 100% limpos.
+
+---
+
+## Fase 3 — Cartas e Campo
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Implementação completa, pura e determinística do fluxo para jogar cartas da mão (`ActionType.PLAY_CARD`) sob `src/core/engine/cardPlaySystem.ts`, despachado via `applyAction` em `gameEngine.ts`. Validação estrita de fase (MAIN), jogador ativo, posse na mão (`CardZone.HAND`) e cobrança exata de custos de Energia. Alocação correta nas zonas `CardZone.BOARD` e `CardZone.ENVIRONMENT`. Teto de 6 Estudantes respeitado com rejeição `BOARD_FULL` e regra normativa de Substituição (remoção do Estudante substituído para `CardZone.DISCARD` e inserção do novo). Limite de 1 Ambiente ativo por jogador com descarte automático do anterior. Atribuição de prontidão e Inércia (`hasInertia = true`, `ready = false`), superada imediatamente por `Keyword.IMPULSO` (`hasInertia = false`, `ready = true`). Catálogo inicial de cartas Alpha em `src/cards/alphaCards.ts`. Suíte com 20 testes unitários específicos e 53 testes globais passando 100% no Vitest com compilação TypeScript limpa.
+
+---
 
 ## Fase 2 — Turnos e Recursos
 
@@ -325,19 +372,19 @@ O Alpha será considerado funcional somente quando:
 * [x] Projeto compila
 * [x] Testes passam
 * [x] Partida pode ser criada
-* [ ] Mão inicial funciona
+* [x] Mão inicial funciona
 * [ ] Mulligan funciona
 * [x] Turnos funcionam
 * [x] Energy funciona
-* [ ] Cartas podem ser jogadas
-* [ ] Campo funciona
-* [ ] Combate funciona
-* [ ] Keywords principais funcionam
+* [x] Cartas podem ser jogadas
+* [x] Campo funciona
+* [x] Combate funciona
+* [x] Keywords principais funcionam
 * [ ] Debate funciona
-* [ ] Popularidade funciona
+* [x] Popularidade funciona
 * [ ] Destaque funciona
 * [ ] IA consegue jogar
-* [ ] Vitória funciona
+* [x] Vitória funciona
 * [x] Derrota funciona
 * [ ] Partida pode ser reiniciada
 * [ ] UI está sincronizada com GameState

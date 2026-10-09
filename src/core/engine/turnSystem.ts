@@ -5,6 +5,17 @@ import { CardInstance } from '../types/card';
 import { CardZone } from '../types/zone';
 import { ActionErrorCode, ActionResult } from '../types/error';
 import { AdvancePhaseAction, EndPhaseAction } from '../types/action';
+import { resolveCombat } from './combatSystem';
+import {
+  createPhaseChangedEvent,
+  createTurnStartedEvent,
+  createTurnEndedEvent,
+  dispatchEvents,
+} from './eventSystem';
+import {
+  updateLearningTurnStatus,
+  evaluateContinuousKeywords,
+} from './keywordSystem';
 
 /**
  * Clona profundamente o GameState de forma determinística e pura, garantindo
@@ -121,12 +132,14 @@ export function resolveStartPhase(state: GameState): GameState {
   // 4. Compra obrigatória de 1 carta
   const drawResult = drawCard(nextState, activePlayer.id);
 
-  return drawResult.state;
+  // 5. Avaliação de efeitos contínuos de início de turno (incluindo Aprendizagem)
+  return evaluateContinuousKeywords(drawResult.state);
 }
 
 export interface ResolveEndPhaseOptions {
   cardInstanceIdsToDiscard?: string[];
   autoCutExcess?: boolean; // Padrão: true (regra de corte)
+  cardRegistry?: Record<string, import('../types/card').CardDefinition>;
 }
 
 /**
@@ -210,6 +223,12 @@ export function resolveEndPhase(
     );
   }
 
+  // 1.1 Atualização normativa da regra de Aprendizagem ao final do turno
+  Object.assign(
+    nextState,
+    updateLearningTurnStatus(nextState, activePlayer.id, options.cardRegistry)
+  );
+
   // 2. Descarte explícito informado nas opções
   if (options.cardInstanceIdsToDiscard && options.cardInstanceIdsToDiscard.length > 0) {
     const discardResult = discardCards(
@@ -267,11 +286,37 @@ export function resolveEndPhase(
   // Define a nova fase como START
   nextState.phase = GamePhase.START;
 
-  return { success: true, state: nextState };
+  const turnEndedEvent = createTurnEndedEvent(state, {
+    turn: state.turn,
+    activePlayerId: activePlayer.id,
+  });
+
+  const turnStartedEvent = createTurnStartedEvent(nextState, {
+    turn: nextState.turn,
+    activePlayerId: nextState.activePlayerId,
+  });
+
+  const phaseChangedEvent = createPhaseChangedEvent(nextState, {
+    fromPhase: GamePhase.END,
+    toPhase: GamePhase.START,
+    activePlayerId: nextState.activePlayerId,
+  });
+
+  const dispatchResult = dispatchEvents(
+    nextState,
+    [turnEndedEvent, turnStartedEvent, phaseChangedEvent]
+  );
+
+  return {
+    success: true,
+    state: dispatchResult.state,
+    events: dispatchResult.emittedEvents,
+  };
 }
 
 export interface AdvancePhaseOptions {
   autoCutExcess?: boolean;
+  cardRegistry?: Record<string, import('../types/card').CardDefinition>;
 }
 
 /**
@@ -309,14 +354,44 @@ export function advancePhase(
         return { success: true, state: resolvedState };
       }
       resolvedState.phase = GamePhase.MAIN;
-      return { success: true, state: resolvedState };
+
+      const phaseEvent = createPhaseChangedEvent(resolvedState, {
+        fromPhase: GamePhase.START,
+        toPhase: GamePhase.MAIN,
+        activePlayerId: resolvedState.activePlayerId,
+      });
+
+      const dispatchResult = dispatchEvents(resolvedState, [phaseEvent], {
+        cardRegistry: options.cardRegistry,
+      });
+
+      return {
+        success: true,
+        state: dispatchResult.state,
+        events: dispatchResult.emittedEvents,
+      };
     }
 
     case GamePhase.MAIN: {
       // MAIN -> DEBATE
       const nextState = cloneGameState(state);
       nextState.phase = GamePhase.DEBATE;
-      return { success: true, state: nextState };
+
+      const phaseEvent = createPhaseChangedEvent(nextState, {
+        fromPhase: GamePhase.MAIN,
+        toPhase: GamePhase.DEBATE,
+        activePlayerId: nextState.activePlayerId,
+      });
+
+      const dispatchResult = dispatchEvents(nextState, [phaseEvent], {
+        cardRegistry: options.cardRegistry,
+      });
+
+      return {
+        success: true,
+        state: dispatchResult.state,
+        events: dispatchResult.emittedEvents,
+      };
     }
 
     case GamePhase.DEBATE: {
@@ -329,14 +404,60 @@ export function advancePhase(
         actions: [],
       };
       nextState.phase = GamePhase.COMBAT;
-      return { success: true, state: nextState };
+
+      const phaseEvent = createPhaseChangedEvent(nextState, {
+        fromPhase: GamePhase.DEBATE,
+        toPhase: GamePhase.COMBAT,
+        activePlayerId: nextState.activePlayerId,
+      });
+
+      const dispatchResult = dispatchEvents(nextState, [phaseEvent], {
+        cardRegistry: options.cardRegistry,
+      });
+
+      return {
+        success: true,
+        state: dispatchResult.state,
+        events: dispatchResult.emittedEvents,
+      };
     }
 
     case GamePhase.COMBAT: {
-      // COMBAT -> END
-      const nextState = cloneGameState(state);
+      // COMBAT -> END: se houver ataques pendentes, resolve o combate automaticamente
+      let nextState = cloneGameState(state);
+      if (nextState.combat?.attacks?.length > 0) {
+        const combatResult = resolveCombat(nextState, options.cardRegistry);
+        if (!combatResult.success) {
+          return combatResult;
+        }
+        nextState = combatResult.state;
+      }
+
+      if (nextState.status === GameStatus.FINISHED) {
+        return { success: true, state: nextState };
+      }
+
+      nextState.combat = {
+        active: false,
+        attacks: [],
+      };
       nextState.phase = GamePhase.END;
-      return { success: true, state: nextState };
+
+      const phaseEvent = createPhaseChangedEvent(nextState, {
+        fromPhase: GamePhase.COMBAT,
+        toPhase: GamePhase.END,
+        activePlayerId: nextState.activePlayerId,
+      });
+
+      const dispatchResult = dispatchEvents(nextState, [phaseEvent], {
+        cardRegistry: options.cardRegistry,
+      });
+
+      return {
+        success: true,
+        state: dispatchResult.state,
+        events: dispatchResult.emittedEvents,
+      };
     }
 
     case GamePhase.END: {

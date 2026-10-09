@@ -66,7 +66,8 @@ export interface CardDefinition {
   morale?: number;
   maxMorale?: number;
   text?: string;
-  effects?: CardEffect[];
+  effects?: (CardEffect | import('./effect').EffectDefinition)[];
+  triggers?: import('./effect').TriggerDefinition[];
 
   // Atributos específicos para Representantes
   popularityRequirement?: number;

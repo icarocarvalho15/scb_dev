@@ -181,9 +181,9 @@ Sua interação com **Infiltração** é definida pela própria Keyword Infiltra
 ## 4.7 Guarda
 
 **Função:**  
-Permitir que o Estudante intercepte ataques direcionados ao Representante.
+Estudantes com Guarda não sofrem Inércia de bloqueio e podem interceptar ataques.
 
-Guarda atua como uma forma de proteção do Representante durante o combate.
+Não confunda: qualquer Estudante pode bloquear, Guarda apenas escolhe quando "lutar" (bloquear).
 
 Sua interação com **Infiltração** é definida pela própria Keyword Infiltração.
 
@@ -279,6 +279,7 @@ Infiltração permite superar determinadas formas de defesa durante o combate.
 - Ignora **Guarda**;
 - Permite direcionar o ataque ao Representante quando essas defesas seriam aplicáveis;
 - Não altera outras restrições de ataque.
+- Não se sobrepõe a **Diplomacia**.
 
 ---
 

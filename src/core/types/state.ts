@@ -11,15 +11,23 @@ export enum GameStatus {
   FINISHED = 'FINISHED',
 }
 
+export type DebateStepName = 'INITIAL' | 'REPLICA' | 'TREPLICA' | 'CONTRARREPLICA';
+
 /**
  * Entrada de ação no Debate
  * O debate Alpha possui 4 etapas no máximo: Ação Inicial -> Réplica -> Tréplica -> Contrarréplica
  * Resolução LIFO conforme docs/rules/SCB_Rules.md seção 24-25
  */
 export interface DebateActionEntry {
+  id?: string;
   step: number; // 1: Ação Inicial, 2: Réplica, 3: Tréplica, 4: Contrarréplica
+  stepName?: DebateStepName;
   playerId: PlayerId;
   cardInstanceId?: string;
+  cardDefinitionId?: string;
+  targetId?: string;
+  targetIds?: string[];
+  parameters?: Record<string, unknown>;
   passed?: boolean;
 }
 
@@ -32,6 +40,26 @@ export interface DebateState {
   initiatorPlayerId: PlayerId | null;
   currentStep: number; // 0 (sem debate) até 4 (contrarréplica)
   actions: DebateActionEntry[];
+  consecutivePasses?: number;
+}
+
+/**
+ * Declaração individual de ataque na Combat Phase
+ * Conforme docs/rules/SCB_Rules.md seções 27-31
+ */
+export interface AttackDeclaration {
+  attackerInstanceId: string;
+  targetId: string; // Pode ser um Estudante adversário ou o Representante adversário
+  blockerInstanceId?: string; // Estudante defensor atribuído para bloquear/interceptar
+}
+
+/**
+ * Estado da fase de combate (COMBAT)
+ * Conforme docs/rules/SCB_Architecture.md seção 23 e 51
+ */
+export interface CombatState {
+  active: boolean;
+  attacks: AttackDeclaration[];
 }
 
 /**
@@ -51,6 +79,7 @@ export interface GameState {
 
   // Sub-estados da engine
   debate: DebateState;
+  combat: CombatState;
   stack: GameAction[];
 
   // Resolução de vitória / encerramento

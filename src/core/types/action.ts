@@ -8,9 +8,12 @@ export enum ActionType {
   PLAY_CARD = 'PLAY_CARD',
   ATTACK = 'ATTACK',
   BLOCK = 'BLOCK',
+  RESOLVE_COMBAT = 'RESOLVE_COMBAT',
   ACTIVATE_ABILITY = 'ACTIVATE_ABILITY',
   START_DEBATE = 'START_DEBATE',
   RESPOND_DEBATE = 'RESPOND_DEBATE',
+  PASS_DEBATE = 'PASS_DEBATE',
+  RESOLVE_DEBATE = 'RESOLVE_DEBATE',
   ACTIVATE_HIGHLIGHT = 'ACTIVATE_HIGHLIGHT',
   MULLIGAN = 'MULLIGAN',
   ADVANCE_PHASE = 'ADVANCE_PHASE',
@@ -54,6 +57,8 @@ export interface StartDebateAction {
   playerId: PlayerId;
   cardInstanceId: string;
   targetId?: string;
+  targetIds?: string[];
+  parameters?: Record<string, unknown>;
 }
 
 export interface RespondDebateAction {
@@ -62,6 +67,18 @@ export interface RespondDebateAction {
   cardInstanceId?: string;
   pass?: boolean;
   targetId?: string;
+  targetIds?: string[];
+  parameters?: Record<string, unknown>;
+}
+
+export interface PassDebateAction {
+  type: ActionType.PASS_DEBATE;
+  playerId: PlayerId;
+}
+
+export interface ResolveDebateAction {
+  type: ActionType.RESOLVE_DEBATE;
+  playerId: PlayerId;
 }
 
 export interface ActivateHighlightAction {
@@ -88,6 +105,11 @@ export interface EndPhaseAction {
   cardInstanceIdsToDiscard?: string[]; // Para descarte na End Phase se necessário
 }
 
+export interface ResolveCombatAction {
+  type: ActionType.RESOLVE_COMBAT;
+  playerId: PlayerId;
+}
+
 export interface DiscardCardsAction {
   type: ActionType.DISCARD_CARDS;
   playerId: PlayerId;
@@ -106,9 +128,12 @@ export type GameAction =
   | PlayCardAction
   | AttackAction
   | BlockAction
+  | ResolveCombatAction
   | ActivateAbilityAction
   | StartDebateAction
   | RespondDebateAction
+  | PassDebateAction
+  | ResolveDebateAction
   | ActivateHighlightAction
   | MulliganAction
   | AdvancePhaseAction
