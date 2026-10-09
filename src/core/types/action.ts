@@ -13,7 +13,9 @@ export enum ActionType {
   RESPOND_DEBATE = 'RESPOND_DEBATE',
   ACTIVATE_HIGHLIGHT = 'ACTIVATE_HIGHLIGHT',
   MULLIGAN = 'MULLIGAN',
+  ADVANCE_PHASE = 'ADVANCE_PHASE',
   END_PHASE = 'END_PHASE',
+  DISCARD_CARDS = 'DISCARD_CARDS',
   SURRENDER = 'SURRENDER',
 }
 
@@ -74,9 +76,22 @@ export interface MulliganAction {
   cardInstanceIdsToReplace: string[];
 }
 
+export interface AdvancePhaseAction {
+  type: ActionType.ADVANCE_PHASE;
+  playerId: PlayerId;
+  cardInstanceIdsToDiscard?: string[]; // Para descarte na End Phase se necessário
+}
+
 export interface EndPhaseAction {
   type: ActionType.END_PHASE;
   playerId: PlayerId;
+  cardInstanceIdsToDiscard?: string[]; // Para descarte na End Phase se necessário
+}
+
+export interface DiscardCardsAction {
+  type: ActionType.DISCARD_CARDS;
+  playerId: PlayerId;
+  cardInstanceIds: string[];
 }
 
 export interface SurrenderAction {
@@ -96,5 +111,7 @@ export type GameAction =
   | RespondDebateAction
   | ActivateHighlightAction
   | MulliganAction
+  | AdvancePhaseAction
   | EndPhaseAction
+  | DiscardCardsAction
   | SurrenderAction;

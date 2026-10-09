@@ -44,7 +44,9 @@ describe('Core Types & Contracts Integrity', () => {
     expect(ActionType.RESPOND_DEBATE).toBe('RESPOND_DEBATE');
     expect(ActionType.ACTIVATE_HIGHLIGHT).toBe('ACTIVATE_HIGHLIGHT');
     expect(ActionType.MULLIGAN).toBe('MULLIGAN');
+    expect(ActionType.ADVANCE_PHASE).toBe('ADVANCE_PHASE');
     expect(ActionType.END_PHASE).toBe('END_PHASE');
+    expect(ActionType.DISCARD_CARDS).toBe('DISCARD_CARDS');
   });
 
   it('deve conter os códigos de erro estruturados para validação', () => {
@@ -53,6 +55,8 @@ describe('Core Types & Contracts Integrity', () => {
     expect(ActionErrorCode.DIPLOMACY_RESTRICTION).toBe('DIPLOMACY_RESTRICTION');
     expect(ActionErrorCode.INERTIA_RESTRICTION).toBe('INERTIA_RESTRICTION');
     expect(ActionErrorCode.DEBATE_CHAIN_FULL).toBe('DEBATE_CHAIN_FULL');
+    expect(ActionErrorCode.HAND_LIMIT_EXCEEDED).toBe('HAND_LIMIT_EXCEEDED');
+    expect(ActionErrorCode.DECK_EMPTY).toBe('DECK_EMPTY');
   });
 
   it('deve validar a integridade das Keywords normativas do Alpha', () => {

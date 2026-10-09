@@ -210,6 +210,7 @@ function buildInitialPlayerState(
     maxEnergy: 1, // Conforme docs/rules/SCB_Rules.md seção 8 (máximo inicial é 1)
     hasMulliganed: false,
     diplomacyActive: true, // Conforme docs/rules/SCB_Rules.md seção 7 (ativo no turno 1)
+    turnCount: 0,
   };
 }
 
@@ -256,6 +257,9 @@ export function createInitialGameState(
 
   const p1State = buildInitialPlayerState(p1Config, initialHandSize, autoDrawInitialHand, rng);
   const p2State = buildInitialPlayerState(p2Config, initialHandSize, autoDrawInitialHand, rng);
+
+  // Jogador inicial está no seu turno 1
+  p1State.turnCount = 1;
 
   const initialDebate: DebateState = {
     active: false,

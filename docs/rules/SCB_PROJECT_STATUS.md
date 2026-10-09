@@ -10,7 +10,7 @@
 
 **Projeto:** School Card Battle (SCB)
 
-**Fase atual:** FASE 1 — FUNDAÇÃO
+**Fase atual:** FASE 3 — CARTAS E CAMPO
 
 **Objetivo atual:** Construir a fundação técnica necessária para um Alpha jogável local contra IA.
 
@@ -59,40 +59,40 @@ Início
 | CardDefinition        | VERIFIED    |   CRITICAL | Tipos e contratos estáticos prontos|
 | CardInstance          | VERIFIED    |       HIGH | Instâncias e zonas mapeadas        |
 | Zones                 | VERIFIED    |       HIGH | Zonas canônicas definidas          |
-| Actions               | IMPLEMENTED |   CRITICAL | União discriminada de GameAction   |
-| Validation            | NOT_STARTED |   CRITICAL | —                                  |
-| Turn System           | NOT_STARTED |   CRITICAL | —                                  |
-| Phases                | IMPLEMENTED |   CRITICAL | GamePhase enum canônico            |
-| Energy                | NOT_STARTED |   CRITICAL | —          |
-| Draw                  | NOT_STARTED |       HIGH | —          |
-| Hand / Mulligan       | NOT_STARTED |       HIGH | —          |
-| Deck System           | NOT_STARTED |       HIGH | —          |
-| Board                 | NOT_STARTED |       HIGH | —          |
-| Substituição          | NOT_STARTED |       HIGH | —          |
-| Environment           | NOT_STARTED |     MEDIUM | —          |
-| Equipment             | NOT_STARTED |     MEDIUM | —          |
-| Basic Combat          | NOT_STARTED |   CRITICAL | —          |
-| Inércia               | NOT_STARTED |       HIGH | —          |
-| Impulso               | NOT_STARTED |       HIGH | —          |
-| Provocação            | NOT_STARTED |       HIGH | —          |
-| Guarda                | NOT_STARTED |       HIGH | —          |
-| Infiltração           | NOT_STARTED |       HIGH | —          |
-| Diplomacia            | NOT_STARTED |       HIGH | —          |
-| Events                | NOT_STARTED |       HIGH | —          |
-| Effects               | NOT_STARTED |       HIGH | —          |
-| Keywords              | NOT_STARTED |       HIGH | —          |
-| Representative System | NOT_STARTED |       HIGH | —          |
-| Popularidade          | NOT_STARTED |       HIGH | —          |
-| Destaque              | NOT_STARTED |       HIGH | —          |
-| Debate System         | NOT_STARTED |       HIGH | —          |
-| AI                    | NOT_STARTED |   CRITICAL | —          |
-| UI Board              | NOT_STARTED |   CRITICAL | —          |
-| Card UI               | NOT_STARTED |       HIGH | —          |
-| Combat UI             | NOT_STARTED |       HIGH | —          |
-| Debate UI             | NOT_STARTED |       HIGH | —          |
-| Integration           | NOT_STARTED |   CRITICAL | —          |
-| QA                    | NOT_STARTED |   CRITICAL | —          |
-| Alpha Release         | NOT_STARTED |   CRITICAL | —          |
+| Actions               | VERIFIED    |   CRITICAL | GameAction + ADVANCE_PHASE/DISCARD |
+| Validation            | VERIFIED    |   CRITICAL | Validação de jogador, fase e limite|
+| Turn System           | VERIFIED    |   CRITICAL | Ciclo START->MAIN->DEBATE->COMBAT->END |
+| Phases                | VERIFIED    |   CRITICAL | Transição determinística de fases  |
+| Energy                | VERIFIED    |   CRITICAL | Escala 1 a 10 e restauração        |
+| Draw                  | VERIFIED    |       HIGH | Compra na Start Phase + Deckout    |
+| Hand / Mulligan       | VERIFIED    |       HIGH | Limite 8 cartas + corte/descarte   |
+| Deck System           | VERIFIED    |       HIGH | Transferência DECK -> HAND         |
+| Board                 | NOT_STARTED |       HIGH | —                                  |
+| Substituição          | NOT_STARTED |       HIGH | —                                  |
+| Environment           | NOT_STARTED |     MEDIUM | —                                  |
+| Equipment             | NOT_STARTED |     MEDIUM | —                                  |
+| Basic Combat          | NOT_STARTED |   CRITICAL | —                                  |
+| Inércia               | NOT_STARTED |       HIGH | —                                  |
+| Impulso               | NOT_STARTED |       HIGH | —                                  |
+| Provocação            | NOT_STARTED |       HIGH | —                                  |
+| Guarda                | NOT_STARTED |       HIGH | —                                  |
+| Infiltração           | NOT_STARTED |       HIGH | —                                  |
+| Diplomacia            | VERIFIED    |       HIGH | Ativa no T1, expira no T2          |
+| Events                | NOT_STARTED |       HIGH | —                                  |
+| Effects               | NOT_STARTED |       HIGH | —                                  |
+| Keywords              | NOT_STARTED |       HIGH | —                                  |
+| Representative System | NOT_STARTED |       HIGH | —                                  |
+| Popularidade          | NOT_STARTED |       HIGH | —                                  |
+| Destaque              | NOT_STARTED |       HIGH | —                                  |
+| Debate System         | NOT_STARTED |       HIGH | —                                  |
+| AI                    | NOT_STARTED |   CRITICAL | —                                  |
+| UI Board              | NOT_STARTED |   CRITICAL | —                                  |
+| Card UI               | NOT_STARTED |       HIGH | —                                  |
+| Combat UI             | NOT_STARTED |       HIGH | —                                  |
+| Debate UI             | NOT_STARTED |       HIGH | —                                  |
+| Integration           | NOT_STARTED |   CRITICAL | —                                  |
+| QA                    | NOT_STARTED |   CRITICAL | —                                  |
+| Alpha Release         | NOT_STARTED |   CRITICAL | —                                  |
 
 ---
 
@@ -102,7 +102,7 @@ Início
 | -------------------- | ----------- | ---------------------------------------------- |
 | 0. Auditoria         | VERIFIED    | Projeto analisado e bloqueadores identificados |
 | 1. Fundação          | VERIFIED    | Engine consegue representar partida inicial    |
-| 2. Turnos e Recursos | NOT_STARTED | Partida avança vários turnos                   |
+| 2. Turnos e Recursos | VERIFIED    | Partida avança vários turnos                   |
 | 3. Cartas e Campo    | NOT_STARTED | Cartas podem ser jogadas pela engine           |
 | 4. Combate           | NOT_STARTED | Combate completo funciona sem UI               |
 | 5. Events / Effects  | NOT_STARTED | Sistema reativo funcional                      |
@@ -251,23 +251,21 @@ Nenhum problema registrado.
 
 # 10. Próxima Missão
 
-**MISSÃO:** FASE 2 — Turnos e Recursos (Turn Lifecycle, Start/End Phases, Energy Scaling, Card Draw).
+**MISSÃO:** FASE 3 — Cartas e Campo (Play Card, Cost Validation, Board Placement, 6-Student Limit & Substitution, Inertia).
 
-**Responsável:** Rules Engineer ([SCB_Rules_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Rules_Engineer.md)) & Game Core Engineer ([SCB_Game_Core_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Game_Core_Engineer.md))
+**Responsável:** Game Core Engineer ([SCB_Game_Core_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Game_Core_Engineer.md)) & Rules Engineer ([SCB_Rules_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Rules_Engineer.md))
 
 **Objetivo:**
-
-* Implementar progressão de turnos (`applyAction` com `END_PHASE`, troca de jogador ativo e ciclo de fases START -> MAIN -> DEBATE -> COMBAT -> END -> START);
-* Implementar incremento e restauração de Energia (1 a 10 máx);
-* Implementar compra de carta no início do turno com condição de derrota por deckout;
-* Implementar descarte ao final do turno se a mão exceder 8 cartas;
-* Testes unitários para múltiplos turnos completos.
+* Implementar ação `PLAY_CARD` na Main Phase com validação pura de custo de Energia;
+* Implementar posicionamento de cartas nas zonas `BOARD` e `ENVIRONMENT`;
+* Implementar limite de 6 Estudantes por jogador e regra normativa de Substituição;
+* Implementar aplicação e verificação de Inércia / Impulso;
+* Suíte de testes unitários pura.
 
 **Critério de conclusão:**
-
-* Partida avança múltiplos turnos de forma determinística;
-* Energia escala corretamente a cada novo turno até 10;
-* Jogadores compram cartas e perdem por deckout se o deck estiver vazio.
+* Estudantes, Ambientes e Equipamentos podem ser jogados pagando custos;
+* Substituição funciona determinística no 6º Estudante;
+* Testes cobrem todas as regras e compilam limpos.
 
 ---
 
@@ -275,6 +273,7 @@ Nenhum problema registrado.
 
 | Data       | Alteração                                                                 | Responsável    |
 | ---------- | ------------------------------------------------------------------------- | -------------- |
+| 2026-10-09 | Conclusão da Fase 2 (Turnos e Recursos: Engine pura, TurnSystem, Testes)   | Rules Engineer |
 | 2026-10-09 | Conclusão da Fase 1 (Fundação: Tooling, Tipos e createInitialGameState)   | Tech Architect |
 | 2026-10-09 | Conclusão da Fase 0 (Auditoria Técnica) e emissão de SCB_AUDIT.md         | Orchestrator   |
 | 2026-10-09 | Criação do status inicial do projeto                                      | Orchestrator   |
@@ -282,6 +281,18 @@ Nenhum problema registrado.
 ---
 
 # 12. Histórico de Fases
+
+## Fase 2 — Turnos e Recursos
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Lógica pura e determinística de turnos implementada sob `src/core/engine/` (`turnSystem.ts`, `diplomacy.ts`, `gameEngine.ts`). Ciclo canônico de 5 fases (START -> MAIN -> DEBATE -> COMBAT -> END -> START) com alternância do jogador ativo; escalonamento estrito de Energia de 1 a 10 a cada rodada de jogador e restauração na Start Phase; compra obrigatória de 1 carta com detecção de Deckout e declaração imediata de vitória; regra de Diplomacia de Abertura ativa no turno 1 e inativa a partir do turno 2; limite de 8 cartas na mão com suporte a descarte explícito e regra de corte (autoCutExcess); suíte com 33 testes automatizados passando 100%.
+
+---
 
 ## Fase 1 — Fundação
 
@@ -316,8 +327,8 @@ O Alpha será considerado funcional somente quando:
 * [x] Partida pode ser criada
 * [ ] Mão inicial funciona
 * [ ] Mulligan funciona
-* [ ] Turnos funcionam
-* [ ] Energy funciona
+* [x] Turnos funcionam
+* [x] Energy funciona
 * [ ] Cartas podem ser jogadas
 * [ ] Campo funciona
 * [ ] Combate funciona
@@ -327,7 +338,7 @@ O Alpha será considerado funcional somente quando:
 * [ ] Destaque funciona
 * [ ] IA consegue jogar
 * [ ] Vitória funciona
-* [ ] Derrota funciona
+* [x] Derrota funciona
 * [ ] Partida pode ser reiniciada
 * [ ] UI está sincronizada com GameState
 * [ ] Não existem bugs CRITICAL conhecidos

@@ -42,7 +42,8 @@ export interface PlayerState {
   energy: number;
   maxEnergy: number;
 
-  // Flags de controle de regras da partida
+  // Flags e contadores de controle de regras da partida
   hasMulliganed: boolean;
   diplomacyActive: boolean; // Ativo durante o primeiro turno do jogador
+  turnCount: number; // Quantidade de turnos jogados por este jogador
 }
