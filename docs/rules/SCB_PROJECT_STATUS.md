@@ -51,18 +51,18 @@ Início
 
 # 3. Status por Sistema
 
-| Sistema               | Status      | Prioridade | Observação |
-| --------------------- | ----------- | ---------: | ---------- |
-| Projeto / Build       | NOT_STARTED |   CRITICAL | —          |
-| GameState             | NOT_STARTED |   CRITICAL | —          |
-| PlayerState           | NOT_STARTED |   CRITICAL | —          |
-| CardDefinition        | NOT_STARTED |   CRITICAL | —          |
-| CardInstance          | NOT_STARTED |       HIGH | —          |
-| Zones                 | NOT_STARTED |       HIGH | —          |
-| Actions               | NOT_STARTED |   CRITICAL | —          |
-| Validation            | NOT_STARTED |   CRITICAL | —          |
-| Turn System           | NOT_STARTED |   CRITICAL | —          |
-| Phases                | NOT_STARTED |   CRITICAL | —          |
+| Sistema               | Status      | Prioridade | Observação                         |
+| --------------------- | ----------- | ---------: | ---------------------------------- |
+| Projeto / Build       | VERIFIED    |   CRITICAL | Vite + TS strict + Vitest operando |
+| GameState             | VERIFIED    |   CRITICAL | createInitialGameState funcional   |
+| PlayerState           | VERIFIED    |   CRITICAL | 2 jogadores e recursos iniciais    |
+| CardDefinition        | VERIFIED    |   CRITICAL | Tipos e contratos estáticos prontos|
+| CardInstance          | VERIFIED    |       HIGH | Instâncias e zonas mapeadas        |
+| Zones                 | VERIFIED    |       HIGH | Zonas canônicas definidas          |
+| Actions               | IMPLEMENTED |   CRITICAL | União discriminada de GameAction   |
+| Validation            | NOT_STARTED |   CRITICAL | —                                  |
+| Turn System           | NOT_STARTED |   CRITICAL | —                                  |
+| Phases                | IMPLEMENTED |   CRITICAL | GamePhase enum canônico            |
 | Energy                | NOT_STARTED |   CRITICAL | —          |
 | Draw                  | NOT_STARTED |       HIGH | —          |
 | Hand / Mulligan       | NOT_STARTED |       HIGH | —          |
@@ -101,7 +101,7 @@ Início
 | Fase                 | Status      | Critério de conclusão                          |
 | -------------------- | ----------- | ---------------------------------------------- |
 | 0. Auditoria         | VERIFIED    | Projeto analisado e bloqueadores identificados |
-| 1. Fundação          | NOT_STARTED | Engine consegue representar partida inicial    |
+| 1. Fundação          | VERIFIED    | Engine consegue representar partida inicial    |
 | 2. Turnos e Recursos | NOT_STARTED | Partida avança vários turnos                   |
 | 3. Cartas e Campo    | NOT_STARTED | Cartas podem ser jogadas pela engine           |
 | 4. Combate           | NOT_STARTED | Combate completo funciona sem UI               |
@@ -251,35 +251,49 @@ Nenhum problema registrado.
 
 # 10. Próxima Missão
 
-**MISSÃO:** FASE 1 — Fundação (Setup de Projeto, Arquitetura Técnica e GameState Inicial).
+**MISSÃO:** FASE 2 — Turnos e Recursos (Turn Lifecycle, Start/End Phases, Energy Scaling, Card Draw).
 
-**Responsável:** Tech Architect ([SCB_Tech_Architect.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Tech_Architect.md)) & Game Core Engineer ([SCB_Game_Core_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Game_Core_Engineer.md))
+**Responsável:** Rules Engineer ([SCB_Rules_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Rules_Engineer.md)) & Game Core Engineer ([SCB_Game_Core_Engineer.md](file:///c:/Users/icaro.carvalho/dravdev/scb_dev/docs/agents/SCB_Game_Core_Engineer.md))
 
 **Objetivo:**
 
-* Inicializar ambiente do projeto (`package.json`, Vite, TypeScript, Vitest);
-* Definir tipos e interfaces fundamentais (`GameState`, `PlayerState`, `CardDefinition`, `CardInstance`, `GameAction`, etc.);
-* Implementar engine inicial pura capaz de instanciar partida determinística sem UI;
-* Garantir compilação e suíte de testes iniciais verdes.
+* Implementar progressão de turnos (`applyAction` com `END_PHASE`, troca de jogador ativo e ciclo de fases START -> MAIN -> DEBATE -> COMBAT -> END -> START);
+* Implementar incremento e restauração de Energia (1 a 10 máx);
+* Implementar compra de carta no início do turno com condição de derrota por deckout;
+* Implementar descarte ao final do turno se a mão exceder 8 cartas;
+* Testes unitários para múltiplos turnos completos.
 
 **Critério de conclusão:**
 
-* Projeto compila limpo;
-* Tipos e contratos fundamentais implementados;
-* Criação de partida inicial via engine com testes unitários passando.
+* Partida avança múltiplos turnos de forma determinística;
+* Energia escala corretamente a cada novo turno até 10;
+* Jogadores compram cartas e perdem por deckout se o deck estiver vazio.
 
 ---
 
 # 11. Últimas Alterações
 
-| Data       | Alteração                                                         | Responsável  |
-| ---------- | ----------------------------------------------------------------- | ------------ |
-| 2026-10-09 | Conclusão da Fase 0 (Auditoria Técnica) e emissão de SCB_AUDIT.md | Orchestrator |
-| 2026-10-09 | Criação do status inicial do projeto                              | Orchestrator |
+| Data       | Alteração                                                                 | Responsável    |
+| ---------- | ------------------------------------------------------------------------- | -------------- |
+| 2026-10-09 | Conclusão da Fase 1 (Fundação: Tooling, Tipos e createInitialGameState)   | Tech Architect |
+| 2026-10-09 | Conclusão da Fase 0 (Auditoria Técnica) e emissão de SCB_AUDIT.md         | Orchestrator   |
+| 2026-10-09 | Criação do status inicial do projeto                                      | Orchestrator   |
 
 ---
 
 # 12. Histórico de Fases
+
+## Fase 1 — Fundação
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Repositório git inicializado; tooling instalado (Vite, TS strict, Vitest); arquitetura de camadas do núcleo estruturada sob `src/core/types/` e `src/core/state/`; contratos fundamentais implementados; gerador determinístico de estado inicial `createInitialGameState` implementado com 100% de testes verdes.
+
+---
 
 ## Fase 0 — Auditoria
 
@@ -297,9 +311,9 @@ Nenhum problema registrado.
 
 O Alpha será considerado funcional somente quando:
 
-* [ ] Projeto compila
-* [ ] Testes passam
-* [ ] Partida pode ser criada
+* [x] Projeto compila
+* [x] Testes passam
+* [x] Partida pode ser criada
 * [ ] Mão inicial funciona
 * [ ] Mulligan funciona
 * [ ] Turnos funcionam
