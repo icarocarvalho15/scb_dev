@@ -1,0 +1,1749 @@
+/* ==========================================================================
+   SCHOOL CARD BATTLE (SCB) — DESIGN SYSTEM & VISUAL THEME
+   Alpha v0.10 — High School TCG Modern Aesthetic (Anime Academy)
+   ========================================================================== */
+
+:root {
+  --bg-dark-base: #070a14;
+  --bg-dark-surface: #0e1526;
+  --bg-dark-card: #141f38;
+  --bg-glass: rgba(14, 21, 38, 0.82);
+  --bg-glass-elevated: rgba(22, 33, 58, 0.9);
+
+  --color-primary: #38bdf8;
+  --color-primary-glow: rgba(56, 189, 248, 0.35);
+  --color-accent-gold: #f59e0b;
+  --color-accent-gold-glow: rgba(245, 158, 11, 0.4);
+  --color-danger: #f43f5e;
+  --color-danger-glow: rgba(244, 63, 94, 0.35);
+  --color-success: #10b981;
+  --color-success-glow: rgba(16, 185, 129, 0.35);
+  --color-purple: #a855f7;
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(56, 189, 248, 0.4);
+
+  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 16px 36px -6px rgba(56, 189, 248, 0.25);
+  --shadow-glow: 0 0 20px var(--color-primary-glow);
+}
+
+/* Reset Global */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-dark-base);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* ==========================================================================
+   GAMEBOARD MASTER LAYOUT
+   ========================================================================== */
+
+.scb-gameboard-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 20%, #172554 0%, #0c1322 45%, #05070d 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top Nav */
+.scb-top-nav {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  background: rgba(10, 15, 29, 0.7);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 20;
+}
+
+.scb-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.scb-brand-logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+.scb-brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+}
+
+.scb-version-pill {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+}
+
+.scb-status-banner {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.scb-banner-action-hint {
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  animation: pulseHint 2s infinite ease-in-out;
+}
+
+.scb-hint-attack {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fda4af;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.scb-hint-defense {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.scb-hint-debate {
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+@keyframes pulseHint {
+
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.scb-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scb-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Surface da Mesa */
+.scb-board-surface {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ==========================================================================
+   AREAS: OPONENTE, CENTRAL, JOGADOR
+   ========================================================================== */
+
+.scb-opponent-area,
+.scb-player-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.scb-zone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+/* Cluster Deck & Discard */
+.scb-deck-discard-cluster {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.scb-pile {
+  width: 52px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.scb-pile:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.scb-deck-pile {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+}
+
+.scb-pile-card-back {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: 1px;
+}
+
+.scb-pile-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 2px;
+}
+
+.scb-pile-label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.scb-discard-pile {
+  background: rgba(30, 41, 59, 0.5);
+  border-style: dashed;
+}
+
+/* Mãos */
+.scb-opponent-hand {
+  display: flex;
+  gap: -15px;
+  justify-content: center;
+  flex: 1;
+}
+
+.scb-player-hand {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex: 1;
+  padding: 0.35rem 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+}
+
+.scb-hand-card-wrapper {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.scb-hand-card-wrapper:hover {
+  transform: translateY(-16px) scale(1.05);
+  z-index: 15;
+}
+
+.scb-empty-hand-notice {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+}
+
+/* Energia no Topo */
+.scb-opponent-energy {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+}
+
+/* Slots de Estudantes no Campo */
+.scb-board-slots {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.scb-board-slot {
+  height: 125px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.scb-slot-empty {
+  background: rgba(15, 23, 42, 0.35);
+  border: 1.5px dashed rgba(255, 255, 255, 0.08);
+}
+
+.scb-slot-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.scb-slot-occupied {
+  background: transparent;
+  border: none;
+}
+
+/* Slot de Ambiente */
+.scb-environment-slot {
+  width: 95px;
+  height: 125px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scb-env-empty {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.3);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  color: var(--text-faint);
+  text-align: center;
+  padding: 4px;
+}
+
+/* Slot de Representante */
+.scb-rep-slot {
+  width: 170px;
+}
+
+/* ==========================================================================
+   REPRESENTATIVE BADGE
+   ========================================================================== */
+
+.scb-representative-badge {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  transition: all 0.25s;
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(10px);
+}
+
+.scb-rep-player {
+  border-left: 3px solid var(--color-primary);
+}
+
+.scb-rep-opponent {
+  border-left: 3px solid var(--color-danger);
+}
+
+.scb-rep-target-candidate {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 16px var(--color-danger-glow);
+  cursor: crosshair;
+  animation: pulseDanger 1.5s infinite;
+}
+
+@keyframes pulseDanger {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.scb-rep-avatar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scb-rep-avatar-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #38bdf8, #1e3a8a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.scb-rep-opponent .scb-rep-avatar-icon {
+  background: linear-gradient(135deg, #f43f5e, #881337);
+}
+
+.scb-diplomacy-badge {
+  position: absolute;
+  bottom: -6px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.55rem;
+  padding: 1px 4px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.scb-rep-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.scb-rep-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.scb-rep-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+}
+
+.scb-rep-role {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* Moral Bar */
+.scb-morale-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scb-morale-bar-bg {
+  width: 100%;
+  height: 7px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.scb-morale-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease-out;
+}
+
+.scb-morale-medium {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.scb-morale-low {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.scb-morale-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* Popularidade */
+.scb-popularity-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  color: var(--color-accent-gold);
+}
+
+.scb-popularity-dots {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.scb-pop-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.scb-pop-dot-filled {
+  background: var(--color-accent-gold);
+  box-shadow: 0 0 6px var(--color-accent-gold-glow);
+}
+
+.scb-btn-highlight {
+  margin-top: 2px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scb-highlight-active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 12px var(--color-accent-gold-glow);
+  animation: pulseGlow 1.5s infinite;
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.9);
+  }
+}
+
+/* ==========================================================================
+   CARD COMPONENT STYLES
+   ========================================================================== */
+
+.scb-card {
+  width: 90px;
+  height: 125px;
+  background: var(--bg-dark-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 6px;
+  position: relative;
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.scb-card-small {
+  width: 72px;
+  height: 100px;
+  padding: 3px 4px;
+}
+
+.scb-card-large {
+  width: 170px;
+  height: 240px;
+  padding: 10px 12px;
+}
+
+/* Tipos */
+.scb-card-type-student {
+  border-top: 2px solid var(--color-primary);
+}
+
+.scb-card-type-debate {
+  border-top: 2px solid var(--color-purple);
+}
+
+.scb-card-type-environment {
+  border-top: 2px solid var(--color-success);
+}
+
+/* Estados */
+.scb-card-playable {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 14px var(--color-primary-glow);
+}
+
+.scb-card-selected {
+  border-color: var(--color-accent-gold) !important;
+  box-shadow: 0 0 18px var(--color-accent-gold-glow);
+  transform: translateY(-6px);
+}
+
+.scb-card-target-candidate {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 16px var(--color-danger-glow);
+  cursor: crosshair;
+  animation: pulseDanger 1.2s infinite;
+}
+
+.scb-card-inertia {
+  opacity: 0.65;
+  filter: grayscale(35%);
+}
+
+.scb-inertia-ribbon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+}
+
+.scb-ready-pulse {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Card Back */
+.scb-card-back {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scb-card-back-pattern {
+  width: 90%;
+  height: 90%;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+}
+
+.scb-card-back-crest {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  letter-spacing: 2px;
+}
+
+/* Elementos Internos da Carta */
+.scb-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scb-card-cost {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 0 6px var(--color-primary-glow);
+}
+
+.scb-card-large .scb-card-cost {
+  width: 28px;
+  height: 28px;
+  font-size: 1rem;
+}
+
+.scb-card-type-badge {
+  font-size: 0.55rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.scb-card-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.scb-card-large .scb-card-title {
+  font-size: 1.1rem;
+}
+
+.scb-card-traits {
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.scb-trait-badge {
+  font-size: 0.55rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.scb-card-illustration {
+  flex: 1;
+  background: radial-gradient(circle, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border-radius: var(--radius-sm);
+  margin: 2px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.scb-card-art-symbol {
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.scb-card-large .scb-card-art-symbol {
+  width: 56px;
+  height: 56px;
+}
+
+.scb-card-keywords {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  max-height: 18px;
+  overflow: hidden;
+}
+
+.scb-keyword-badge {
+  font-size: 0.52rem;
+  background: rgba(245, 158, 11, 0.18);
+  color: #fde68a;
+  border-radius: 3px;
+  padding: 1px 3px;
+  font-weight: 600;
+}
+
+.scb-card-body {
+  font-size: 0.58rem;
+  color: #cbd5e1;
+  max-height: 26px;
+  overflow: hidden;
+  line-height: 1.15;
+}
+
+.scb-card-large .scb-card-body {
+  font-size: 0.85rem;
+  max-height: none;
+  line-height: 1.4;
+}
+
+.scb-card-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 2px;
+  margin-top: 2px;
+}
+
+.scb-stat {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.scb-card-large .scb-stat {
+  font-size: 1.15rem;
+}
+
+.scb-stat-influence {
+  color: #38bdf8;
+}
+
+.scb-stat-morale {
+  color: #10b981;
+}
+
+.scb-stat-damaged {
+  color: #f43f5e;
+}
+
+.scb-stat-max {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+}
+
+/* ==========================================================================
+   CENTRAL ZONE (COMBATE E DEBATE)
+   ========================================================================== */
+
+.scb-central-zone {
+  min-height: 105px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0.25rem 0;
+}
+
+.scb-central-idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.scb-central-watermark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0.4;
+}
+
+.scb-watermark-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  color: #475569;
+}
+
+.scb-watermark-subtitle {
+  font-size: 0.7rem;
+  color: #334155;
+}
+
+.scb-turn-indicator-badge {
+  background: rgba(15, 23, 42, 0.7);
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.scb-indicator-player-turn {
+  color: var(--color-primary);
+}
+
+.scb-indicator-ai-turn {
+  color: var(--text-muted);
+}
+
+.scb-indicator-thinking {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-accent-gold);
+}
+
+.scb-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  border-top-color: var(--color-accent-gold);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Confrontos de Combate */
+.scb-combat-banner {
+  width: 100%;
+  max-width: 800px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.15);
+}
+
+.scb-combat-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fda4af;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.scb-combat-clashes {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.scb-combat-clash {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(30, 41, 59, 0.7);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scb-combat-clash:hover,
+.scb-clash-selected {
+  border-color: var(--color-primary);
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.scb-clash-unit {
+  display: flex;
+  flex-direction: column;
+}
+
+.scb-unit-role {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.scb-unit-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.scb-unit-stat {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.scb-role-blocker {
+  color: #10b981;
+}
+
+.scb-role-direct {
+  color: #f43f5e;
+}
+
+.scb-btn-small {
+  background: var(--color-primary);
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+/* Debate Stack */
+.scb-debate-banner {
+  width: 100%;
+  max-width: 800px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+}
+
+.scb-debate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.scb-debate-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #d8b4fe;
+}
+
+.scb-btn-pass-debate {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+}
+
+.scb-debate-stack {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.scb-debate-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(30, 41, 59, 0.7);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.75rem;
+}
+
+.scb-debate-step-tag {
+  font-weight: 700;
+  color: var(--color-purple);
+}
+
+.scb-debate-actor {
+  color: var(--text-muted);
+}
+
+.scb-debate-card-pill {
+  background: rgba(168, 85, 247, 0.2);
+  color: #e9d5ff;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scb-debate-passed-tag {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ==========================================================================
+   PHASE CONTROLS & FOOTER
+   ========================================================================== */
+
+.scb-footer-controls {
+  height: 64px;
+  background: rgba(10, 15, 29, 0.88);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-subtle);
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  z-index: 20;
+}
+
+.scb-phase-controls {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Turno e Orbes de Energia */
+.scb-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.scb-turn-counter {
+  display: flex;
+  flex-direction: column;
+}
+
+.scb-turn-number {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.scb-turn-player-tag {
+  font-size: 0.65rem;
+  color: var(--color-primary);
+}
+
+.scb-player-energy-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scb-energy-icon-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #7dd3fc;
+}
+
+.scb-energy-orbs {
+  display: flex;
+  gap: 3px;
+}
+
+.scb-energy-orb {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s;
+}
+
+.scb-orb-filled {
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  border-color: #7dd3fc;
+  box-shadow: 0 0 8px var(--color-primary-glow);
+}
+
+.scb-orb-empty {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.scb-orb-locked {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: transparent;
+}
+
+/* Phase Tracker */
+.scb-phase-tracker {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+}
+
+.scb-phase-step {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  position: relative;
+  transition: all 0.25s;
+}
+
+.scb-phase-active {
+  background: var(--color-primary);
+  color: #030712;
+  font-weight: 800;
+  box-shadow: 0 0 14px var(--color-primary-glow);
+}
+
+/* Controles Direita */
+.scb-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.scb-btn-primary {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  border: none;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 8px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--color-primary-glow);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.scb-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--color-primary-glow);
+}
+
+.scb-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.scb-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scb-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.scb-btn-cancel {
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fda4af;
+}
+
+.scb-btn-icon {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scb-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ==========================================================================
+   MODAIS & OVERLAYS
+   ========================================================================== */
+
+.scb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.scb-modal-content {
+  background: var(--bg-dark-surface);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  max-width: 650px;
+  width: 90%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  animation: modalEnter 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scb-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.5rem;
+}
+
+.scb-modal-header h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.scb-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.scb-modal-close:hover {
+  color: #fff;
+}
+
+.scb-modal-instruction {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.scb-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.75rem;
+}
+
+/* Modal de Zoom */
+.scb-card-zoom-body {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.scb-card-zoom-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.scb-card-zoom-info h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.35rem;
+}
+
+.scb-zoom-meta {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.scb-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.scb-badge-cost {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+}
+
+.scb-badge-type {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.scb-zoom-traits,
+.scb-zoom-keywords {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.scb-zoom-desc {
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #f1f5f9;
+}
+
+/* Modal de Substituição & Descarte */
+.scb-substitution-grid,
+.scb-discard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.scb-sub-item,
+.scb-discard-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scb-sub-item:hover,
+.scb-discard-item:hover {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: var(--color-primary);
+}
+
+.scb-sub-selected,
+.scb-discard-selected {
+  border-color: var(--color-accent-gold) !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+.scb-btn-select-sub {
+  width: 100%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.scb-btn-selected {
+  background: var(--color-accent-gold);
+  color: #000;
+  border: none;
+}
+
+.scb-discard-checkbox {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.scb-discard-selected .scb-discard-checkbox {
+  color: #f43f5e;
+}
+
+.scb-discard-counter {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-accent-gold);
+  margin-bottom: 0.75rem;
+}
+
+/* GameOver Modal */
+.scb-gameover-modal {
+  text-align: center;
+  max-width: 460px;
+}
+
+.scb-victory {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 50px var(--color-primary-glow);
+}
+
+.scb-defeat {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 50px var(--color-danger-glow);
+}
+
+.scb-gameover-trophy {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.scb-gameover-header h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.scb-victory h2 {
+  color: #38bdf8;
+}
+
+.scb-defeat h2 {
+  color: #f43f5e;
+}
+
+.scb-gameover-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.scb-gameover-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.scb-gameover-stat-box {
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.scb-stat-title {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.scb-stat-number {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.scb-btn-restart-large {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+/* ==========================================================================
+   BATTLE LOG DRAWER
+   ========================================================================== */
+
+.scb-log-drawer {
+  position: fixed;
+  top: 48px;
+  right: 0;
+  width: 320px;
+  bottom: 64px;
+  background: rgba(14, 21, 38, 0.95);
+  backdrop-filter: blur(12px);
+  border-left: 1px solid var(--border-subtle);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+  animation: slideDrawer 0.25s ease-out;
+}
+
+@keyframes slideDrawer {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.scb-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.scb-btn-close-log {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.scb-log-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.scb-log-item {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.scb-log-turn {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.scb-log-actor-player .scb-log-turn {
+  color: #38bdf8;
+}
+
+.scb-log-actor-ai .scb-log-turn {
+  color: #f43f5e;
+}
+
+.scb-log-message {
+  color: #cbd5e1;
+}
+
+/* ==========================================================================
+   TOASTS
+   ========================================================================== */
+
+.scb-toast-container {
+  position: fixed;
+  bottom: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.scb-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  animation: toastIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scb-toast-error {
+  background: rgba(244, 63, 94, 0.9);
+  color: #fff;
+}
+
+.scb-toast-warning {
+  background: rgba(245, 158, 11, 0.9);
+  color: #fff;
+}
+
+.scb-toast-info {
+  background: rgba(14, 21, 38, 0.9);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.scb-toast-success {
+  background: rgba(16, 185, 129, 0.9);
+  color: #fff;
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE & MOBILE ADAPTATION
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .scb-board-slots {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+
+  .scb-board-slot {
+    height: 100px;
+  }
+
+  .scb-rep-slot {
+    width: 140px;
+  }
+
+  .scb-phase-step .scb-phase-name {
+    display: none;
+  }
+}

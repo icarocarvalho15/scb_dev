@@ -10,9 +10,9 @@
 
 **Projeto:** School Card Battle (SCB)
 
-**Fase atual:** FASE 7 — DEBATE SYSTEM
+**Fase atual:** FASE 10 — UI SYSTEM
 
-**Objetivo atual:** Construir a fundação técnica necessária para um Alpha jogável local contra IA.
+**Objetivo atual:** Construir a interface visual interativa para um Alpha jogável local contra IA.
 
 **Status geral:** IN_PROGRESS
 
@@ -85,12 +85,12 @@ Início
 | Popularidade          | VERIFIED    |       HIGH | Gatilho data-driven funcional via barramento de eventos |
 | Destaque              | VERIFIED    |       HIGH | Desbloqueio automático via requisito de Popularidade |
 | Debate System         | VERIFIED    |       HIGH | Pilha LIFO de 4 níveis, target invalidation parcial e ações de debate |
-| AI                    | NOT_STARTED |   CRITICAL | —                                  |
-| UI Board              | NOT_STARTED |   CRITICAL | —                                  |
-| Card UI               | NOT_STARTED |       HIGH | —                                  |
-| Combat UI             | NOT_STARTED |       HIGH | —                                  |
-| Debate UI             | NOT_STARTED |       HIGH | —                                  |
-| Integration           | NOT_STARTED |   CRITICAL | —                                  |
+| AI                    | VERIFIED    |   CRITICAL | ActionGenerator, LegalActionFilter, Evaluator, DecisionPolicy, AIPlayer e Simulações |
+| UI Board              | VERIFIED    |   CRITICAL | Mesa modular com OpponentArea, PlayerArea, CentralZone e slots |
+| Card UI               | VERIFIED    |       HIGH | CardComponent rico com stats, traços, keywords, estados e zoom |
+| Combat UI             | VERIFIED    |       HIGH | Visualização de confrontos, setas e seleção de bloqueador |
+| Debate UI             | VERIFIED    |       HIGH | Pilha LIFO de 4 níveis, identificação de réplica e controle |
+| Integration           | VERIFIED    |   CRITICAL | useGameController orquestrando Engine First e IA autônoma |
 | QA                    | NOT_STARTED |   CRITICAL | —                                  |
 | Alpha Release         | NOT_STARTED |   CRITICAL | —                                  |
 
@@ -108,10 +108,10 @@ Início
 | 5. Events / Effects  | VERIFIED    | Sistema reativo funcional                      |
 | 6. Keywords          | VERIFIED    | Keywords Alpha testadas                        |
 | 7. Representantes    | VERIFIED    | Popularidade e Destaque funcionam              |
-| 8. Debate            | IN_PROGRESS | Debate completo funciona                       |
-| 9. IA                | NOT_STARTED | IA completa partidas                           |
-| 10. UI               | NOT_STARTED | Jogador consegue controlar partida             |
-| 11. Vertical Slice   | NOT_STARTED | Partida completa jogável                       |
+| 8. Debate            | VERIFIED    | Debate completo funciona                       |
+| 9. IA                | VERIFIED    | IA completa partidas                           |
+| 10. UI               | VERIFIED    | Interface gráfica interativa e responsiva operacional |
+| 11. Vertical Slice   | IN_PROGRESS | Partida completa jogável ponta a ponta         |
 | 12. QA               | NOT_STARTED | Sem bugs CRITICAL conhecidos                   |
 | 13. Alpha            | NOT_STARTED | Alpha funcional                                |
 
@@ -251,15 +251,15 @@ Nenhum problema registrado.
 
 # 10. Próxima Missão
 
-**MISSÃO:** FASE 8 — AI System (IA Básica e Heurística de Tomada de Decisão).
+**MISSÃO:** FASE 11 — Vertical Slice (Partida Completa Jogável, Validação e Balanceamento do Alpha).
 
-**Responsável:** AI Engineer & Game Core Engineer
+**Responsável:** Tech Lead & Game Designer
 
 **Objetivo:**
-* Implementar o loop de decisão autônomo da IA para ações legais de jogo (jogar cartas, debater, atacar, bloquear, passar turno).
+* Validação ponta a ponta do fluxo completo de gameplay humano vs IA no navegador e homologação da experiência de usuário.
 
 **Critério de conclusão:**
-* IA capaz de jogar uma partida completa de forma válida sem travar a engine.
+* Partidas completas disputadas com feedback fluido, sem regressões de regras e estabilidade comprovada.
 
 ---
 
@@ -267,7 +267,10 @@ Nenhum problema registrado.
 
 | Data       | Alteração                                                                 | Responsável    |
 | ---------- | ------------------------------------------------------------------------- | -------------- |
-| 2026-10-09 | Conclusão da Fase 7 (Debate System: Pilha LIFO 4 níveis, Invalidação Parcial, START/RESPOND/PASS/RESOLVE) | Debate & Rules Engineers |
+| 2026-10-09 | Conclusão da Fase 10 (UI System: Interface gráfica completa em React, Board modular, CardComponent rico, CentralZone de Combate e Debates, PhaseControls, Modais e integração Engine-First com AIPlayer) | UI Engineer |
+| 2026-10-09 | Conclusão da Fase 9 (AI System: ActionGenerator, LegalActionFilter, EvaluationFunction, DecisionPolicy, AIPlayer e Simulação Determinística) | AI Engineer |
+| 2026-10-09 | Conclusão da Fase 8 (Debate System: Pilha LIFO 4 níveis, Invalidação Parcial, START/RESPOND/PASS/RESOLVE) | Debate & Rules Engineers |
+| 2026-10-09 | Conclusão da Fase 7 (Representantes: Destaque operando e Popularidade via Eventos reativos) | Representative & Game Core Engineers |
 | 2026-10-09 | Conclusão da Fase 6 (Keywords Engine: Centralizador modular, Proteção, Silêncio, Colaboração, Rivalidade, Aprendizagem) | Keyword & Rules Engineers |
 | 2026-10-09 | Conclusão da Fase 5 (Events & Effects: Barramento puro, Triggers, Auras)  | Game Core & Rules Engineers |
 | 2026-10-09 | Conclusão da Fase 4 (Combate: ATTACK, BLOCK, RESOLVE_COMBAT, Keywords)    | Combat & Rules Engineers |
@@ -280,6 +283,54 @@ Nenhum problema registrado.
 ---
 
 # 12. Histórico de Fases
+
+## Fase 10 — UI System
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Implementação completa da interface visual e interativa web em React para o Alpha de School Card Battle. Arquitetura 100% aderente ao princípio Engine First (nenhuma regra duplicada na interface; toda permissão/bloqueio consulta `validateAction` e mutações passam estritamente por `applyAction`). Construção modular de componentes sob `src/ui/`: `GameBoard`, `OpponentArea`, `PlayerArea`, `CentralZone` (Battlefield e Debate Zone LIFO), `CardComponent` (com renderização de custo, traços, keywords, estados de inércia, prontidão e dano), `RepresentativeBadge` (com moral, popularidade reativa e destaque), `PhaseControls` (trilha das 5 fases, orbes de energia luminosos e botões de avanço), `SubstitutionModal` (para limite de 6 estudantes no board), `DiscardModal` (para limite de 8 cartas na End Phase), `GameOverModal` (telas de vitória/derrota com métricas), `BattleLog` (histórico de eventos) e `ToastContainer` (feedback não invasivo da engine). Criação do hook desacoplado `useGameController` com loop autônomo da IA (com delay legível de ~700ms). Design System moderno em CSS Vanilla (`src/index.css`) com estética escolar/anime sofisticada, glassmorphism e responsividade para resoluções menores e mobile. Suíte de testes automatizados expandida para 207 testes verdes no Vitest (14 arquivos) e compilação limpa em TypeScript estrito (`npm run build`).
+
+---
+
+## Fase 9 — AI System
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Implementação completa, desacoplada e 100% aderente ao princípio Engine First do subsistema autônomo de inteligência artificial sob `src/ai/`. Criação modular de `actionGenerator.ts` (geração de ações candidatas por fase para START, MAIN, DEBATE, COMBAT e END), `legalActionFilter.ts` (filtragem rigorosa usando `validateAction` e validações canônicas de despacho), `evaluator.ts` (função heurística de estado avaliando condições terminais, moral de Representantes, controle/atributos de mesa, keywords e vantagem de cartas), `decisionPolicy.ts` (avaliação determinística pura via simulação `applyAction`, bônus táticos para combate, desenvolvimento de mesa e desempate determinístico com semente pseudo-aleatória) e `aiPlayer.ts` (`AIPlayer`, `chooseAction`, `stepGame`, `takeTurn` e orquestrador de partidas `simulateMatch`). Criação de suíte completa sob `tests/ai/` com 34 testes automatizados cobrindo geração, filtragem, heurísticas, políticas de decisão e simulação de partidas ponta a ponta sem qualquer crash ou emissão de ações ilegais (`success: true` em 100% dos despachos). Total de 202 testes globais verdes no Vitest com build e typecheck 100% limpos.
+
+---
+
+## Fase 8 — Debate System
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Implementação do motor de Debates com resolução em Pilha Reversa LIFO, ações integradas (START, RESPOND, PASS, RESOLVE), controle de invalidação parcial de alvos. (Suíte de testes concluída e aprovada).
+
+---
+
+## Fase 7 — Representantes
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-09
+
+**Conclusão:** 2026-10-09
+
+**Resultado:** Sistema de Representantes funcional. Popularidade integrada ao motor de eventos (ON_ALLY_ATTACK, etc). Habilidade de Destaque operacional com dedução de Energia e aplicação de efeitos contínuos no Board, utilizando a infraestrutura criada na Fase 5.
+
+---
 
 ## Fase 6 — Keywords Engine
 
@@ -380,14 +431,14 @@ O Alpha será considerado funcional somente quando:
 * [x] Campo funciona
 * [x] Combate funciona
 * [x] Keywords principais funcionam
-* [ ] Debate funciona
+* [x] Debate funciona
 * [x] Popularidade funciona
-* [ ] Destaque funciona
-* [ ] IA consegue jogar
+* [x] Destaque funciona
+* [x] IA consegue jogar
 * [x] Vitória funciona
 * [x] Derrota funciona
-* [ ] Partida pode ser reiniciada
-* [ ] UI está sincronizada com GameState
+* [x] Partida pode ser reiniciada
+* [x] UI está sincronizada com GameState
 * [ ] Não existem bugs CRITICAL conhecidos
 
 ---
