@@ -37,9 +37,7 @@ export function isActionLegal(
   switch (action.type) {
     case ActionType.ADVANCE_PHASE:
     case ActionType.END_PHASE: {
-      if (action.playerId !== state.activePlayerId) {
-        return false;
-      }
+      // Já rigorosamente validado em validateAction (respeitando o fluxo bifásico da fase de combate)
       return true;
     }
 

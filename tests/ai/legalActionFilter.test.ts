@@ -81,7 +81,7 @@ describe('AI System — LegalActionFilter (src/ai/legalActionFilter.ts)', () => 
       expect(legal[0]).toEqual(actions[1]); // Apenas o Novato é legal
     });
 
-    it('deve rejeitar avanço de fase solicitado por jogador inativo', () => {
+    it('deve rejeitar avanço de fase solicitado por jogador inativo na MAIN phase', () => {
       const state = createInitialGameState();
       state.phase = GamePhase.MAIN;
       state.activePlayerId = 'player1';
@@ -93,6 +93,38 @@ describe('AI System — LegalActionFilter (src/ai/legalActionFilter.ts)', () => 
 
       expect(isActionLegal(state, action)).toBe(false);
       expect(filterLegalActions(state, [action])).toEqual([]);
+    });
+
+    it('deve aceitar ADVANCE_PHASE do defensor em COMBAT quando attackersDeclared = true', () => {
+      const state = createInitialGameState();
+      state.phase = GamePhase.COMBAT;
+      state.activePlayerId = 'player1';
+      state.combat = {
+        active: true,
+        attackersDeclared: true,
+        attacks: [
+          {
+            attackerInstanceId: 'atk_1',
+            targetId: 'player2',
+          },
+        ],
+      };
+
+      const defenderAdvance: GameAction = {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player2',
+      };
+      const attackerAdvance: GameAction = {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player1',
+      };
+
+      expect(isActionLegal(state, defenderAdvance)).toBe(true);
+      expect(filterLegalActions(state, [defenderAdvance])).toEqual([defenderAdvance]);
+
+      // O atacante NÃO pode avançar novamente enquanto aguarda o defensor
+      expect(isActionLegal(state, attackerAdvance)).toBe(false);
+      expect(filterLegalActions(state, [attackerAdvance])).toEqual([]);
     });
   });
 

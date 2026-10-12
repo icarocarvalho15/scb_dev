@@ -10,13 +10,13 @@
 
 **Projeto:** School Card Battle (SCB)
 
-**Fase atual:** FASE 12 / 13 — POLISH & ALPHA RELEASE
+**Fase atual:** FASE 13 CONCLUÍDA — ALPHA 0.1 RELEASED & FROZEN
 
-**Objetivo atual:** Implementação do Mulligan, polimento visual e UX final, balanceamento empírico e congelamento da versão Alpha 1.0.
+**Objetivo atual:** Congelamento definitivo da versão ALPHA 0.1 (v0.1.3) com Mulligan determinístico, polimento estético/UX, extinção de deadlocks e 247 testes verdes.
 
-**Status geral:** IN_PROGRESS
+**Status geral:** READY / FROZEN (ALPHA v0.1.3)
 
-**Última atualização:** 2026-10-11
+**Última atualização:** 2026-10-12
 
 ---
 
@@ -65,7 +65,7 @@ Início
 | Phases                | VERIFIED    |   CRITICAL | Transição determinística de fases  |
 | Energy                | VERIFIED    |   CRITICAL | Escala 1 a 10 e restauração        |
 | Draw                  | VERIFIED    |       HIGH | Compra na Start Phase + Deckout    |
-| Hand / Mulligan       | IN_PROGRESS |       HIGH | Limite 8 cartas VERIFIED; Mulligan em integração |
+| Hand / Mulligan       | VERIFIED    |       HIGH | Limite 8 cartas e Mulligan parcial determinístico (0-4 cartas) operando |
 | Deck System           | VERIFIED    |       HIGH | Transferência DECK -> HAND         |
 | Board                 | VERIFIED    |       HIGH | Limite de 6 Estudantes e alocação na zona BOARD |
 | Substituição          | VERIFIED    |       HIGH | Regra normativa no 6º estudante com descarte do antigo |
@@ -91,8 +91,8 @@ Início
 | Combat UI             | VERIFIED    |       HIGH | Visualização de confrontos, setas e seleção de bloqueador |
 | Debate UI             | VERIFIED    |       HIGH | Pilha LIFO de 4 níveis, identificação de réplica e controle |
 | Integration           | VERIFIED    |   CRITICAL | useGameController orquestrando Engine First e IA autônoma |
-| QA                    | VERIFIED    |   CRITICAL | Homologação E2E, 226 testes verdes e relatório SCB_QA_REPORT.md |
-| Alpha Release         | IN_PROGRESS |   CRITICAL | Mulligan, polish visual e congelamento Alpha 1.0 |
+| QA                    | VERIFIED    |   CRITICAL | Homologação E2E, 247 testes verdes e relatório SCB_QA_REPORT.md |
+| Alpha Release         | VERIFIED    |   CRITICAL | Mulligan, polish visual e congelamento definitivo ALPHA 0.1 |
 
 ---
 
@@ -110,10 +110,10 @@ Início
 | 7. Representantes    | VERIFIED    | Popularidade e Destaque funcionam              |
 | 8. Debate            | VERIFIED    | Debate completo funciona                       |
 | 9. IA                | VERIFIED    | IA completa partidas                           |
-10: | 10. UI               | VERIFIED    | Interface gráfica interativa e responsiva operacional |
-11: | 11. Vertical Slice   | VERIFIED    | Partida completa jogável ponta a ponta homologada |
-12: | 12. QA               | VERIFIED    | Sem bugs CRITICAL conhecidos (SCB_QA_REPORT.md emitido) |
-13: | 13. Alpha            | IN_PROGRESS | Mulligan integrado, polish e congelamento Alpha 1.0 |
+| 10. UI               | VERIFIED    | Interface gráfica interativa e responsiva operacional |
+| 11. Vertical Slice   | VERIFIED    | Partida completa jogável ponta a ponta homologada |
+| 12. QA               | VERIFIED    | Sem bugs CRITICAL conhecidos (SCB_QA_REPORT.md emitido) |
+| 13. Alpha            | VERIFIED    | Mulligan integrado, polish e congelamento definitivo ALPHA 0.1 |
 
 ---
 
@@ -130,7 +130,7 @@ Início
 | docs/rules/SCB_Balance.md       | READY       | Balanceamento                              |
 | docs/rules/SCB_AUDIT.md         | READY       | Relatório de auditoria técnica (Fase 0)    |
 | docs/rules/SCB_QA_REPORT.md     | READY       | Emitido e consolidado pós-playtest da Fase 11 |
-| docs/rules/SCB_ALPHA_STATUS.md  | IN_PROGRESS | Criado no fechamento do Alpha 1.0          |
+| docs/rules/SCB_ALPHA_STATUS.md  | READY       | Documento oficial de congelamento e homologação ALPHA 0.1 |
 
 ---
 
@@ -258,7 +258,7 @@ Nenhum problema registrado.
 **Objetivo:**
 * Implementar o fluxo normativo de Mulligan Parcial (Seção 24 de SCB_Rules.md e Seção 6.2 do GDD) na inicialização da partida (Humano e IA).
 * Realizar os ajustes estéticos e de acabamento final na interface React e Design System.
-* Congelar a versão Alpha 1.0 de School Card Battle e emitir o documento formal `docs/rules/SCB_ALPHA_STATUS.md`.
+* Congelar a versão ALPHA 0.1 de School Card Battle e emitir o documento formal `docs/rules/SCB_ALPHA_STATUS.md`.
 
 **Critério de conclusão:**
 * Mulligan operacional no setup sem quebrar o fluxo autônomo da IA nem o avanço automático da Start Phase.
@@ -442,7 +442,7 @@ O Alpha será considerado funcional somente quando:
 * [x] Testes passam
 * [x] Partida pode ser criada
 * [x] Mão inicial funciona
-* [ ] Mulligan funciona
+* [x] Mulligan funciona
 * [x] Turnos funcionam
 * [x] Energy funciona
 * [x] Cartas podem ser jogadas

@@ -1,51 +1,87 @@
-Assuma as responsabilidades conjuntas de QA Engineer e Integration Engineer conforme definidos em @docs/agents/SCB_QA_Engineer.md e @docs/agents/SCB_Integration_Engineer.md.
-Seu Perfil: Validação ponta a ponta, caça a bugs reativos/concorrentes no React e testes exploratórios de experiência no navegador.
+Assuma as responsabilidades conjuntas de Game Core Engineer e UI Engineer, conforme definidos em @docs/agents/SCB_Game_Core_Engineer.md e @docs/agentes/SCB_UI_Engineer.md.
 
-Briefing Formal — Diretiva de Delegação (Fase 11: Vertical Slice)
+Seu foco será em:
+Implementar e testar ActionType.MULLIGAN na Engine (validateAction, applyAction), garantindo determinismo, embaralhamento via rngSeed e suíte de testes unitários verdes.
+Criar o MulliganModal.tsx, integrá-lo no useGameController.ts, aplicar os estilos no index.css e polir a UX final.
+Rodar os testes E2E, simulações completas de partidas e emitir o SCB_ALPHA_STATUS.md para fechamento definitivo do Alpha 1.0.
 
-Fase: 11 — Vertical Slice (Homologação Alpha Local Jogável)
+Briefing Formal — Diretiva de Delegação (Fases 12 / 13)
+
+Missão: Mulligan Parcial, Polimento de UI/UX e Fechamento do Alpha 1.0
 Status: IN_PROGRESS
-Agente Responsável: QA & Integration Engineer
+Agente Responsável: Game Core Engineer & UI Engineer
 Supervisor: Orchestrator / Tech Lead
 
-Objetivo:
-Subir a aplicação web localmente (npm run dev), jogar partidas completas como Humano contra a IA e validar ponta a ponta a integridade de regras, sincronização reativa e ausência de soft-locks na interface.
-
 Documentação Obrigatória:
-@docs/rules/SCB_PROJECT_STATUS.md — Status e escopo do Alpha.
-@docs/rules/SCB_Rules.md — Autoridade normativa do jogo (turnos, combate, debates, diplomacia).
-@docs/rules/SCB_Architecture.md — Princípio Engine First e isolamento de regras.
+@docs/rules/SCB_Rules.md (Seção 4, 5 e 6)
+@docs/rules/SCB_GDD.md (Seções 4, 6 e 12)
+@docs/rules/SCB_Architecture.md (Seções 5, 6, 13 e 18)
+@docs/rules/SCB_QA_REPORT.md
+@docs/rules/SCB_PROJECT_STATUS.md
 
-Componentes e Módulos no Escopo:
-Orquestrador de UI: useGameController.ts
-Mesa e Componentes: GameBoard.tsx, CentralZone.tsx, PhaseControls.tsx
-Modais: SubstitutionModal.tsx, DiscardModal.tsx, GameOverModal.tsx
-Loop da IA: aiPlayer.ts integrado ao despachador gameEngine.ts
+1. Escopo e Objetivos da Tarefa
+O objetivo é implementar o sistema de Mulligan de forma puramente orientada a regras e eventos (Engine First), integrá-lo à IA e à interface com um modal estético anime/glassmorphism, aplicar os toques finais de polimento de UX e preparar o repositório para o congelamento da versão Alpha 1.0.
 
-Critérios de Aceite para a Homologação:
-Execução Local e Carregamento: npm run dev inicia sem avisos de runtime ou erros no console do navegador.
-O estado inicial renderiza: Jogador (Daichi) com 4 cartas e 1 de Energia; Oponente (Akira) com 4 cartas ocultas; trilha de fases destacando a fase atual.
+1.1 Critérios do Sistema de Mulligan (Regras Oficiais)
+Momento de Ocorrência:
+Ocorre imediatamente após a criação da partida e compra da mão inicial de 4 cartas, antes do início do Turno 1 (ou como etapa de abertura do Turno 1 pré-Main Phase).
 
-Transições de Fase e Feedback Visual:
-O avanço pelo ciclo canônico (START $\rightarrow$ MAIN $\rightarrow$ DEBATE $\rightarrow$ COMBAT $\rightarrow$ END) sincroniza botões, trilhas de fases e toasts de feedback.
-Estados de prontidão e Inércia são refletidos visualmente nas cartas recém-jogadas.
+Parcial e Flexível:
+Cada jogador (Humano e IA) avalia suas 4 cartas e pode selecionar de $0$ a $4$ cartas para substituir.
+Selecionar $0$ cartas equivale a "Manter Mão" (Skip Mulligan).
 
-Fluxo Completo Humano vs IA:
-O jogador consegue baixar cartas respeitando a Energia disponível.
-A IA responde aos turnos e fases sem violar regras e sem gerar loops infinitos.
-Resolução de combates exibe o confronto de Moral e Influência com cálculo de dano mútuo e descarte de derrotados.
-Pilha de Debate (LIFO até 4 níveis) permite responder ou passar a vez adequadamente.
-Popularidade é contabilizada e o gatilho de Destaque é desbloqueado no limiar correto.
+Oportunidade Única:
+Cada jogador só pode realizar o Mulligan uma única vez por partida (hasMulliganed = true).
 
-Detecção e Prevenção de Soft-Locks:
-Mão Cheia: Com mais de 8 cartas na END phase, o DiscardModal.tsx obriga o descarte do excedente sem travar a interface.
-Campo Lotado: Ao tentar jogar o 7º estudante, o SubstitutionModal.tsx exige escolher um estudante para descarte ou cancelar sem travar a mão.
-Passe de Fase sob Ação Pendente: O jogo não deve permitir avançar de fase enquanto houver resoluções obrigatórias bloqueadas ou turnos da IA pendentes.
-Combate sem Bloqueadores: Possibilidade de avançar quando a IA ou o jogador optar por não declarar bloqueadores.
+Mecânica de Troca Determinística:
+As cartas descartadas são devolvidas ao baralho e substituídas por igual quantidade de novas compras do topo do deck.
+O baralho é reembaralhado deterministicamente utilizando o rngSeed do estado.
+O total de cartas na mão do jogador permanece exatamente 4 após o Mulligan.
 
-Condição Terminal e Reinicialização:
-Reduzir a Moral do Representante a 0 dispara o GameOverModal.tsx com estado de Vitória/Derrota.
-O botão "Jogar Novamente" reinicia a partida do zero com novo seed determinístico e estado integro.
+Autonomia da IA (AIPlayer):
+A IA deve possuir uma rotina heurística simples e determinística para o Mulligan (ex.: descartar cartas de custo $> 3$ ou cartas situacionais caso não possua estudantes jogáveis de custo 1-2 na mão inicial).
+O Mulligan da IA não deve depender de cliques do usuário nem gerar soft-locks.
+
+1.2 Critérios de Polimento Estético e UI/UX (Alpha 1.0)
+Modal de Mulligan (MulliganModal.tsx):
+Apresentação em destaque das 4 cartas com toggle visual de seleção ("Marcar para trocar").
+
+Indicador de estado claro, com botões:
+"Substituir X Cartas" (quando 1 ou mais estiverem selecionadas);
+"Manter Mão" (quando nenhuma estiver selecionada).
+Transição suave para o tabuleiro após a confirmação de ambos os lados.
+
+Design System & Micro-interações:
+Revisão visual no index.css mantendo estética anime de prestígio acadêmico (gradientes sutis, glassmorphism, sombras neon e bordas refinadas).
+Garantir que o handoff entre o Mulligan e a MAIN phase do primeiro turno preserve a automação da START phase sem "piscar" ou congelar.
+Refinamento dos badges de status no tabuleiro (Inércia, Prontidão, Bloqueio Livre e Destaque).
+
+2. Restrições Técnicas & Arquitetura
+Princípio Engine First: A UI nunca altera o estado de cartas diretamente. Qualquer substituição deve ser despachada como ActionType.MULLIGAN via applyAction e validada por validateAction.
+Imutabilidade Estrita: Não mutar arrays de cartas no GameState; gerar sempre novos clones de estado puros.
+Preservação de Regras: Nenhuma alteração em regras já homologadas (Diplomacia no T1, Bloqueio Livre, Destaque custando 0 de Energia, limite de 6 no campo, limite de 8 na mão).
+Zero Regressão: Todos os 226 testes existentes devem continuar verdes.
+
+3. Arquivos Autorizados para Modificação
+src/core/engine/gameEngine.ts (adicionar suporte a ActionType.MULLIGAN)
+src/core/engine/mulliganSystem.ts (novo módulo dedicado caso necessário)
+src/ai/actionGenerator.ts e src/ai/aiPlayer.ts (decisão heurística de Mulligan da IA)
+src/ui/components/Modals/MulliganModal.tsx (novo componente)
+src/ui/hooks/useGameController.ts (orquestração do setup e do modal)
+src/ui/components/Board/GameBoard.tsx (renderização do modal)
+src/index.css (estilos do modal e polimento de UI)
+tests/core/mulliganSystem.test.ts (novos testes)
+
+4. Testes Obrigatórios e Critérios de Aceite
+Testes Unitários da Engine:
+Validar Mulligan com 0 cartas (manter mão), com 1 a 4 cartas substituídas, e rejeição de tentativa repetida (hasMulliganed = true -> ALREADY_MULLIGANED). Validar que o tamanho da mão permanece exatamente 4 após o Mulligan.
+
+Testes de IA:
+Garantir que a simulação de partidas (aiSimulation.test.ts) opere perfeitamente com a decisão de Mulligan inclusa sem despachar ações ilegais.
+
+Entregável Final:
+Emissão de @docs/rules/SCB_ALPHA_STATUS.md formalizando o congelamento da versão Alpha 1.0.
+Atualização de @docs/rules/SCB_PROJECT_STATUS.md.
 
 Instruções de Execução:
 Pense passo a passo. Implemente o código necessário focando no Princípio Engine First e na Imutabilidade Estrita. Quando terminar e os testes estiverem passando, responda estritamente com o relatório de conclusão no formato exigido.

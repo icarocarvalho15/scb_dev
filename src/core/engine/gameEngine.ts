@@ -1,4 +1,5 @@
 import { GameState, GameStatus } from '../types/state';
+import { GamePhase } from '../types/phase';
 import { ActionType, GameAction } from '../types/action';
 import { ActionErrorCode, ActionResult } from '../types/error';
 import { CardDefinition } from '../types/card';
@@ -16,6 +17,7 @@ import {
   validateResolveDebate,
 } from './debateSystem';
 import { activateHighlight, validateActivateHighlight } from './representativeSystem';
+import { executeMulligan, validateMulligan } from './mulliganSystem';
 import { GameEvent } from '../types/event';
 
 export interface ApplyActionOptions {
@@ -152,6 +154,14 @@ export function applyAction(
       return result;
     }
 
+    case ActionType.MULLIGAN: {
+      const result = executeMulligan(state, action, { cardRegistry: options?.cardRegistry });
+      if (result.success) {
+        result.state.history.push(action);
+      }
+      return result;
+    }
+
     case ActionType.ACTIVATE_ABILITY: {
       const val = validateAction(state, action, options);
       if (!val.valid) {
@@ -171,7 +181,7 @@ export function applyAction(
         success: false,
         error: {
           code: ActionErrorCode.UNKNOWN_ERROR,
-          message: `Ação do tipo ${action.type} ainda não implementada na engine.`,
+          message: `Ação do tipo ${(action as any).type} ainda não implementada na engine.`,
         },
       };
     }
@@ -258,6 +268,44 @@ export function validateAction(
     case ActionType.ACTIVATE_HIGHLIGHT: {
       const val = validateActivateHighlight(state, action, options?.cardRegistry);
       return val.valid ? { valid: true } : { valid: false, error: val.error };
+    }
+
+    case ActionType.MULLIGAN: {
+      const val = validateMulligan(state, action, { cardRegistry: options?.cardRegistry });
+      return val.valid ? { valid: true } : { valid: false, error: val.error };
+    }
+
+    case ActionType.ADVANCE_PHASE:
+    case ActionType.END_PHASE: {
+      if (action.playerId) {
+        if (
+          state.phase === GamePhase.COMBAT &&
+          (state.combat?.attacks?.length ?? 0) > 0 &&
+          state.combat?.attackersDeclared
+        ) {
+          const defenderId = getOpponentId(state, state.activePlayerId);
+          if (action.playerId !== defenderId) {
+            return {
+              valid: false,
+              error: {
+                code: ActionErrorCode.INVALID_PLAYER,
+                message: 'Apenas o defensor pode concluir a declaração de bloqueios.',
+              },
+            };
+          }
+        } else {
+          if (action.playerId !== state.activePlayerId) {
+            return {
+              valid: false,
+              error: {
+                code: ActionErrorCode.INVALID_PLAYER,
+                message: 'Apenas o jogador ativo pode avançar a fase.',
+              },
+            };
+          }
+        }
+      }
+      return { valid: true };
     }
 
     default:

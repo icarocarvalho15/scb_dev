@@ -17,6 +17,7 @@ import {
   canAttackRepresentative,
   validateDiplomacyAttackTarget,
 } from '../../src/core';
+import { getExpectedActor } from '../../src/ai';
 
 function unwrapState(result: ActionResult<GameState>): GameState {
   expect(result.success).toBe(true);
@@ -447,6 +448,102 @@ describe('Core Engine — Turn System & Resource Progression (Fase 2)', () => {
       expect(originalState.phase).toBe(originalPhase);
       expect(originalState.turn).toBe(originalTurn);
       expect(originalState.players['player1'].hand).toHaveLength(originalHandLen);
+    });
+  });
+
+  describe('7. Máquina de Estados Bifásica na Combat Phase (Hotfix 2)', () => {
+    it('quando o atacante despacha ADVANCE_PHASE com ataques declarados, não pula para END e transfere prioridade para o defensor', () => {
+      let state = createInitialGameState();
+      state.phase = GamePhase.COMBAT;
+      state.activePlayerId = 'player1';
+      state.turn = 2;
+      state.players.player1.diplomacyActive = false;
+      state.players.player2.diplomacyActive = false;
+
+      // Adiciona atacante no board de player1
+      state.players.player1.board.push({
+        instanceId: 'attacker_1',
+        definitionId: 'student_1',
+        ownerId: 'player1',
+        controllerId: 'player1',
+        zone: CardZone.BOARD,
+        currentInfluence: 3,
+        currentMorale: 3,
+        ready: true,
+        hasInertia: false,
+        statuses: [],
+      });
+
+      // Player1 declara ataque
+      const atkRes = applyAction(state, {
+        type: ActionType.ATTACK,
+        playerId: 'player1',
+        attackerInstanceId: 'attacker_1',
+      });
+      expect(atkRes.success).toBe(true);
+      if (!atkRes.success) return;
+      state = atkRes.state;
+
+      expect(state.combat.attacks).toHaveLength(1);
+      expect(state.combat.attackersDeclared).toBeFalsy();
+
+      // Atacante (player1) despacha ADVANCE_PHASE
+      const advRes = advancePhase(state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player1',
+      });
+      expect(advRes.success).toBe(true);
+      if (!advRes.success) return;
+      state = advRes.state;
+
+      // NÃO DEVE encerrar o combate nem pular para END!
+      expect(state.phase).toBe(GamePhase.COMBAT);
+      expect(state.combat.attackersDeclared).toBe(true);
+      // Moral de player2 ainda está intacta (dano ainda não foi resolvido)
+      expect(state.players.player2.representative.currentMorale).toBe(20);
+
+      // Prioridade transferida estritamente para o defensor (player2)
+      expect(getExpectedActor(state)).toBe('player2');
+
+      // Se o atacante tentar avançar novamente, deve ser rejeitado pela Engine
+      const repeatRes = advancePhase(state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player1',
+      });
+      expect(repeatRes.success).toBe(false);
+      if (!repeatRes.success) {
+        expect(repeatRes.error.code).toBe(ActionErrorCode.INVALID_PLAYER);
+      }
+
+      // Somente quando o DEFENSOR (player2) despacha ADVANCE_PHASE, o combate resolve e avança para END
+      const defAdvRes = advancePhase(state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player2',
+      });
+      expect(defAdvRes.success).toBe(true);
+      if (!defAdvRes.success) return;
+      const finalState = defAdvRes.state;
+
+      expect(finalState.phase).toBe(GamePhase.END);
+      expect(finalState.players.player2.representative.currentMorale).toBe(17);
+      expect(finalState.combat.active).toBe(false);
+    });
+
+    it('quando o atacante avança com 0 ataques declarados, o combate pula direto para END', () => {
+      let state = createInitialGameState();
+      state.phase = GamePhase.COMBAT;
+      state.activePlayerId = 'player1';
+
+      expect(state.combat.attacks).toHaveLength(0);
+
+      const advRes = advancePhase(state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player1',
+      });
+      expect(advRes.success).toBe(true);
+      if (!advRes.success) return;
+
+      expect(advRes.state.phase).toBe(GamePhase.END);
     });
   });
 });

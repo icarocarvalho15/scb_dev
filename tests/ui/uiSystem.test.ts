@@ -13,6 +13,7 @@ import {
   GameStatus,
   CardInstance,
   CardZone,
+  evaluateAiMulligan,
 } from '../../src/core';
 import { chooseAction, getExpectedActor } from '../../src/ai';
 
@@ -324,10 +325,18 @@ describe('UI System — Match Setup & Engine-First Integration', () => {
       if (!atkRes.success) return;
       expect(atkRes.state.combat.attacks[0].targetId).toBe('rep_akira');
 
-      // Avança combate sem declarar bloqueadores (defensor optou por não bloquear)
-      const combatEndRes = applyAction(atkRes.state, {
+      // Avança combate bifásico: Atacante conclui ataques, Defensor opta por não bloquear
+      const atkAdvRes = applyAction(atkRes.state, {
         type: ActionType.ADVANCE_PHASE,
         playerId: 'player1',
+      });
+      expect(atkAdvRes.success).toBe(true);
+      if (!atkAdvRes.success) return;
+      expect(atkAdvRes.state.combat.attackersDeclared).toBe(true);
+
+      const combatEndRes = applyAction(atkAdvRes.state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player2',
       });
       expect(combatEndRes.success).toBe(true);
       if (combatEndRes.success) {
@@ -369,9 +378,16 @@ describe('UI System — Match Setup & Engine-First Integration', () => {
       expect(atkRes.success).toBe(true);
       if (!atkRes.success) return;
 
-      const resolveRes = applyAction(atkRes.state, {
+      const atkAdv = applyAction(atkRes.state, {
         type: ActionType.ADVANCE_PHASE,
         playerId: 'player1',
+      });
+      expect(atkAdv.success).toBe(true);
+      if (!atkAdv.success) return;
+
+      const resolveRes = applyAction(atkAdv.state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player2',
       });
       expect(resolveRes.success).toBe(true);
       if (resolveRes.success) {
@@ -555,12 +571,20 @@ describe('UI System — Match Setup & Engine-First Integration', () => {
       expect(atkRes.success).toBe(true);
       if (!atkRes.success) return;
 
+      // IA confirma término de declaração de atacantes (Fluxo Bifásico)
+      const declRes = applyAction(atkRes.state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player2',
+      });
+      expect(declRes.success).toBe(true);
+      if (!declRes.success) return;
+
       // Sem Infiltração, a prioridade DEVE passar para o defensor (player1)
-      const actor = getExpectedActor(atkRes.state);
+      const actor = getExpectedActor(declRes.state);
       expect(actor).toBe('player1');
 
       // Humano declara Bloqueio Livre com sucesso
-      const blockRes = applyAction(atkRes.state, {
+      const blockRes = applyAction(declRes.state, {
         type: ActionType.BLOCK,
         playerId: 'player1',
         blockerInstanceId: 'human_defender_blocker',
@@ -631,6 +655,96 @@ describe('UI System — Match Setup & Engine-First Integration', () => {
       // Popularidade foi consumida
       expect(actRes.state.players.player1.representative.popularity).toBe(0);
       expect(actRes.state.players.player1.representative.highlightAvailable).toBe(false);
+    });
+  });
+
+  describe('4. Hotfix 1 — Sequenciamento Correto de Mulligan e Start Phase', () => {
+    it('o estado inicial possui estritamente 4 cartas na mão e hasMulliganed = false', () => {
+      const p1Deck = createDaichiPlayerDeck();
+      const p2Deck = createAkiraAIDeck();
+      const state = createInitialGameState({
+        player1: { id: 'player1', deck: p1Deck },
+        player2: { id: 'player2', deck: p2Deck },
+      });
+
+      expect(state.phase).toBe(GamePhase.START);
+      expect(state.turn).toBe(1);
+      expect(state.players.player1.hasMulliganed).toBe(false);
+      expect(state.players.player2.hasMulliganed).toBe(false);
+      expect(state.players.player1.hand.length).toBe(4);
+      expect(state.players.player2.hand.length).toBe(4);
+    });
+
+    it('o Mulligan avalia apenas as 4 cartas iniciais e a 5ª carta é comprada somente após o avanço para MAIN', () => {
+      const p1Deck = createDaichiPlayerDeck();
+      const p2Deck = createAkiraAIDeck();
+      const registry = buildMatchRegistry(p1Deck, p2Deck);
+      let state = createInitialGameState({
+        rngSeed: 12345,
+        player1: { id: 'player1', deck: p1Deck },
+        player2: { id: 'player2', deck: p2Deck },
+      });
+
+      // 1. Antes do Mulligan: exatas 4 cartas na mão
+      expect(state.players.player1.hand.length).toBe(4);
+      const initialP1HandIds = state.players.player1.hand.map((c) => c.instanceId);
+
+      // 2. Executa o Mulligan do Jogador (substituindo 2 cartas)
+      const p1MulliganRes = applyAction(
+        state,
+        {
+          type: ActionType.MULLIGAN,
+          playerId: 'player1',
+          cardInstanceIdsToReplace: [initialP1HandIds[0], initialP1HandIds[1]],
+        },
+        { cardRegistry: registry }
+      );
+      expect(p1MulliganRes.success).toBe(true);
+      if (!p1MulliganRes.success) return;
+      state = p1MulliganRes.state;
+
+      // Pós-mulligan do jogador: hasMulliganed = true, mas mão AINDA tem estritamente 4 cartas
+      expect(state.players.player1.hasMulliganed).toBe(true);
+      expect(state.players.player1.hand.length).toBe(4);
+      expect(state.phase).toBe(GamePhase.START);
+
+      // 3. Executa o Mulligan da IA
+      const aiCardsToReplace = evaluateAiMulligan(state.players.player2.hand, registry);
+      const aiMulliganRes = applyAction(
+        state,
+        {
+          type: ActionType.MULLIGAN,
+          playerId: 'player2',
+          cardInstanceIdsToReplace: aiCardsToReplace,
+        },
+        { cardRegistry: registry }
+      );
+      expect(aiMulliganRes.success).toBe(true);
+      if (!aiMulliganRes.success) return;
+      state = aiMulliganRes.state;
+
+      expect(state.players.player2.hasMulliganed).toBe(true);
+      expect(state.players.player2.hand.length).toBe(4);
+      expect(state.phase).toBe(GamePhase.START);
+
+      // 4. Somente agora a Start Phase é resolvida avançando para MAIN Phase
+      const advanceRes = applyAction(
+        state,
+        {
+          type: ActionType.ADVANCE_PHASE,
+          playerId: state.activePlayerId,
+        },
+        { cardRegistry: registry }
+      );
+      expect(advanceRes.success).toBe(true);
+      if (!advanceRes.success) return;
+      state = advanceRes.state;
+
+      // Agora sim a fase é MAIN e a 5ª carta foi comprada pelo jogador ativo (Turno 1)
+      expect(state.phase).toBe(GamePhase.MAIN);
+      expect(state.players.player1.hand.length).toBe(5);
+      expect(state.players.player1.energy).toBe(1);
+      expect(state.players.player1.maxEnergy).toBe(1);
     });
   });
 });

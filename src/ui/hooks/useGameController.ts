@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GameState, GameStatus } from '../../core/types/state';
 import { GameAction, ActionType } from '../../core/types/action';
-import { CardInstance, CardDefinition, CardType, Keyword } from '../../core/types/card';
+import { CardInstance, CardDefinition, CardType } from '../../core/types/card';
 import { GamePhase } from '../../core/types/phase';
 import { applyAction, validateAction } from '../../core/engine/gameEngine';
-import { hasCardKeyword } from '../../core/engine/keywordSystem';
 import { getExpectedActor, chooseAction } from '../../ai/aiPlayer';
 import { createInitialGameState } from '../../core/state/createInitialGameState';
 import {
@@ -13,6 +12,7 @@ import {
   buildMatchRegistry,
 } from '../../cards/deckBuilder';
 import { findCardDefinition } from '../../cards/alphaCards';
+import { evaluateAiMulligan } from '../../core/engine/mulliganSystem';
 import { ToastNotification, LogEntry, UISelectionMode } from '../types';
 
 export function useGameController() {
@@ -24,9 +24,9 @@ export function useGameController() {
     [playerDeck, aiDeck]
   );
 
-  // Estado canônico do jogo (iniciado com Start Phase processada automaticamente)
+  // Estado canônico do jogo (inicia na etapa de abertura/Mulligan em START phase)
   const [gameState, setGameState] = useState<GameState>(() => {
-    const initial = createInitialGameState({
+    return createInitialGameState({
       matchId: `alpha_${Date.now()}`,
       rngSeed: Math.floor(Math.random() * 100000),
       shuffleDeck: true,
@@ -44,15 +44,6 @@ export function useGameController() {
         deck: aiDeck,
       },
     });
-    const startRes = applyAction(
-      initial,
-      {
-        type: ActionType.ADVANCE_PHASE,
-        playerId: initial.activePlayerId,
-      },
-      { cardRegistry }
-    );
-    return startRes.success ? startRes.state : initial;
   });
 
   // Estados de Interação da UI
@@ -64,6 +55,8 @@ export function useGameController() {
   const [inspectedCard, setInspectedCard] = useState<CardDefinition | null>(null);
 
   // Modais
+  const [isMulliganModalOpen, setIsMulliganModalOpen] = useState(true);
+  const [selectedMulliganCardIds, setSelectedMulliganCardIds] = useState<string[]>([]);
   const [isSubstitutionModalOpen, setIsSubstitutionModalOpen] = useState(false);
   const [pendingSubstitutionCardId, setPendingSubstitutionCardId] = useState<string | null>(null);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
@@ -151,7 +144,12 @@ export function useGameController() {
       // Auto Start Phase: Se a ação resultou em START phase (ex: virada de turno em END phase),
       // processa imediatamente a Start Phase no motor para que o novo jogador ativo
       // já inicie com energia escalada, carta comprada e estado estabilizado em MAIN phase.
-      if (nextState.phase === GamePhase.START && nextState.status !== GameStatus.FINISHED) {
+      // NOTA (Hotfix 1): Apenas avança automaticamente se o Mulligan inicial já foi concluído.
+      if (
+        nextState.phase === GamePhase.START &&
+        nextState.status !== GameStatus.FINISHED &&
+        nextState.players.player1?.hasMulliganed
+      ) {
         const startResult = applyAction(
           nextState,
           {
@@ -185,7 +183,17 @@ export function useGameController() {
       } else if (action.type === ActionType.BLOCK) {
         logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} declarou bloqueio`;
       } else if (action.type === ActionType.ADVANCE_PHASE) {
-        logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} avançou a fase (${nextState.phase})`;
+        if (currentState.phase === GamePhase.COMBAT) {
+          if ((currentState.combat?.attacks?.length ?? 0) > 0 && !currentState.combat?.attackersDeclared) {
+            logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} concluiu declaração de ataques. Vez do defensor declarar Bloqueio Livre!`;
+          } else if (currentState.combat?.attackersDeclared) {
+            logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} concluiu a defesa. Combate resolvido!`;
+          } else {
+            logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} pulou o combate.`;
+          }
+        } else {
+          logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} avançou a fase (${nextState.phase})`;
+        }
       } else if (action.type === ActionType.START_DEBATE) {
         logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} iniciou um Debate`;
       } else if (action.type === ActionType.RESPOND_DEBATE) {
@@ -215,7 +223,7 @@ export function useGameController() {
         // Se a IA for o defensor em COMBAT e não puder ou não quiser bloquear
         if (currentState.phase === GamePhase.COMBAT && currentState.activePlayerId === 'player1') {
           addLog('IA optou por não declarar mais bloqueadores.', 'ai');
-          dispatchAction({ type: ActionType.ADVANCE_PHASE, playerId: 'player1' }, 'player');
+          dispatchAction({ type: ActionType.ADVANCE_PHASE, playerId: 'player2' }, 'ai');
           return;
         }
 
@@ -228,29 +236,6 @@ export function useGameController() {
 
         // Se a IA for o jogador ativo, ela avança a fase canônica
         if (currentState.activePlayerId === 'player2') {
-          // Se estiver em COMBAT e possuir ataques declarados sem Infiltração:
-          if (currentState.phase === GamePhase.COMBAT) {
-            const attacks = currentState.combat?.attacks ?? [];
-            const hasBlockableAttack = attacks.some((a) => {
-              const attacker = currentState.players.player2.board.find((s) => s.instanceId === a.attackerInstanceId);
-              return attacker ? !hasCardKeyword(attacker, Keyword.INFILTRACAO, cardRegistry) : true;
-            });
-
-            // Se há ataque bloqueável e o defensor humano ainda não concluiu a defesa, transfere prioridade para ele
-            if (attacks.length > 0 && hasBlockableAttack && !currentState.combat?.defenderPassed) {
-              const nextState: GameState = {
-                ...currentState,
-                combat: {
-                  ...currentState.combat,
-                  attackersDeclared: true,
-                },
-              };
-              gameStateRef.current = nextState;
-              setGameState(nextState);
-              addLog('IA concluiu a declaração de ataques. Sua vez de declarar Bloqueio Livre!', 'ai');
-              return;
-            }
-          }
 
           let discardIds: string[] | undefined;
           if (currentState.phase === GamePhase.END) {
@@ -367,6 +352,10 @@ export function useGameController() {
   // =========================================================================
   useEffect(() => {
     if (gameState.status === GameStatus.FINISHED) return;
+    // HOTFIX 1: Durante a abertura da partida, a Start Phase do Turno 1 (e a compra da 5ª carta)
+    // NÃO deve ser processada antes da resolução do Mulligan obrigatório.
+    if (!gameState.players.player1?.hasMulliganed) return;
+
     if (gameState.phase === GamePhase.START) {
       const activePlayerId = gameState.activePlayerId;
       const result = applyAction(
@@ -387,7 +376,7 @@ export function useGameController() {
         );
       }
     }
-  }, [gameState.phase, gameState.turn, cardRegistry, addLog]);
+  }, [gameState.phase, gameState.turn, gameState.players.player1?.hasMulliganed, cardRegistry, addLog]);
 
   // =========================================================================
   // ENGINE FIRST: CONSULTAS DECLARATIVAS DE VALIDADE
@@ -772,6 +761,12 @@ export function useGameController() {
 
     cancelSelection();
 
+    // HOTFIX 1: Bloquear avanço de fase caso o Mulligan inicial ainda esteja pendente
+    if (!gameState.players.player1?.hasMulliganed) {
+      addToast('Conclua o Mulligan antes de avançar.', 'warning');
+      return;
+    }
+
     // Se estiver na fase de debate e um debate estiver ativo
     if (gameState.phase === GamePhase.DEBATE && gameState.debate.active) {
       dispatchAction({
@@ -779,47 +774,6 @@ export function useGameController() {
         playerId: 'player1',
       });
       return;
-    }
-
-    // Se estiver defendendo em COMBAT e optar por não bloquear
-    if (gameState.phase === GamePhase.COMBAT && gameState.activePlayerId === 'player2') {
-      // Informa que não bloqueará e a IA avança o combate
-      dispatchAction(
-        {
-          type: ActionType.ADVANCE_PHASE,
-          playerId: 'player2',
-        },
-        'ai'
-      );
-      return;
-    }
-
-    // Se o jogador humano estiver atacando em COMBAT e optar por concluir ataques
-    if (gameState.phase === GamePhase.COMBAT && gameState.activePlayerId === 'player1') {
-      const attacks = gameState.combat?.attacks ?? [];
-      const hasBlockableAttack = attacks.some((a) => {
-        const attacker = gameState.players.player1.board.find((s) => s.instanceId === a.attackerInstanceId);
-        return attacker ? !hasCardKeyword(attacker, Keyword.INFILTRACAO, cardRegistry) : true;
-      });
-
-      // Se há ataques declarados e o defensor ainda não passou:
-      // O jogador encerra a etapa de declaração de ataques e transfere a prioridade para o bloqueio da IA
-      if (attacks.length > 0 && hasBlockableAttack && !gameState.combat?.defenderPassed) {
-        const nextState: GameState = {
-          ...gameState,
-          combat: {
-            ...gameState.combat,
-            attackersDeclared: true,
-          },
-        };
-        gameStateRef.current = nextState;
-        setGameState(nextState);
-        addLog(
-          'Jogador concluiu a declaração de ataques. Aguardando declaração de bloqueios da IA...',
-          'player'
-        );
-        return;
-      }
     }
 
     // Se estiver na End Phase e a mão exceder 8 cartas: abrir modal de descarte
@@ -855,12 +809,96 @@ export function useGameController() {
   }, [gameState, selectedDiscardCardIds, dispatchAction, addToast]);
 
   /**
+   * Handlers do Sistema de Mulligan (Turno 1 / Abertura)
+   */
+  const handleToggleMulliganCard = useCallback((cardId: string) => {
+    setSelectedMulliganCardIds((prev) =>
+      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
+    );
+  }, []);
+
+  const handleSelectAllMulliganCards = useCallback(() => {
+    const p1Hand = gameStateRef.current.players.player1?.hand ?? [];
+    setSelectedMulliganCardIds(p1Hand.map((c) => c.instanceId));
+  }, []);
+
+  const handleClearMulliganSelection = useCallback(() => {
+    setSelectedMulliganCardIds([]);
+  }, []);
+
+  const handleConfirmMulligan = useCallback(() => {
+    const state = gameStateRef.current;
+
+    // 1. Despacha o Mulligan do jogador humano
+    const p1Action: GameAction = {
+      type: ActionType.MULLIGAN,
+      playerId: 'player1',
+      cardInstanceIdsToReplace: selectedMulliganCardIds,
+    };
+    const p1Res = applyAction(state, p1Action, { cardRegistry });
+    if (!p1Res.success) {
+      addToast(`Erro no Mulligan: ${p1Res.error?.message}`, 'error');
+      return;
+    }
+
+    let current = p1Res.state;
+    const p1Msg =
+      selectedMulliganCardIds.length === 0
+        ? 'Jogador manteve a mão inicial de 4 cartas.'
+        : `Jogador substituiu ${selectedMulliganCardIds.length} carta(s) no Mulligan.`;
+    addLog(p1Msg, 'player', p1Action);
+
+    // 2. IA realiza o Mulligan de forma autônoma
+    const aiCardsToReplace = evaluateAiMulligan(current.players.player2.hand, cardRegistry);
+    const aiAction: GameAction = {
+      type: ActionType.MULLIGAN,
+      playerId: 'player2',
+      cardInstanceIdsToReplace: aiCardsToReplace,
+    };
+    const aiRes = applyAction(current, aiAction, { cardRegistry });
+    if (aiRes.success) {
+      current = aiRes.state;
+      const aiMsg =
+        aiCardsToReplace.length === 0
+          ? 'IA manteve a mão inicial intacta.'
+          : `IA substituiu ${aiCardsToReplace.length} carta(s) no Mulligan.`;
+      addLog(aiMsg, 'ai', aiAction);
+    }
+
+    // 3. Handoff suave: avança da START phase para a MAIN phase do Turno 1
+    // (A compra da 5ª carta do Turno 1 ocorre aqui, na resolução oficial da Start Phase pós-Mulligan)
+    if (current.phase === GamePhase.START) {
+      const startRes = applyAction(
+        current,
+        {
+          type: ActionType.ADVANCE_PHASE,
+          playerId: current.activePlayerId,
+        },
+        { cardRegistry }
+      );
+      if (startRes.success) {
+        current = startRes.state;
+        addLog(
+          `Turno 1 iniciado na Fase Principal (MAIN). Compra de início de turno realizada para ${current.activePlayerId === 'player1' ? 'Jogador' : 'IA'}.`,
+          'engine'
+        );
+      }
+    }
+
+    // 4. Conclui a transição
+    gameStateRef.current = current;
+    setGameState(current);
+    setIsMulliganModalOpen(false);
+    setSelectedMulliganCardIds([]);
+    addToast('Mulligan concluído! Turno 1 iniciado na Fase Principal.', 'success');
+  }, [addLog, addToast, cardRegistry, selectedMulliganCardIds]);
+
+  /**
    * Reiniciar partida (Novo Jogo)
    */
   const handleRestartMatch = useCallback(() => {
     const freshPlayerDeck = createDaichiPlayerDeck();
     const freshAiDeck = createAkiraAIDeck();
-    const freshRegistry = buildMatchRegistry(freshPlayerDeck, freshAiDeck);
 
     const initial = createInitialGameState({
       matchId: `alpha_${Date.now()}`,
@@ -881,20 +919,12 @@ export function useGameController() {
       },
     });
 
-    const startRes = applyAction(
-      initial,
-      {
-        type: ActionType.ADVANCE_PHASE,
-        playerId: initial.activePlayerId,
-      },
-      { cardRegistry: freshRegistry }
-    );
-    const newGame = startRes.success ? startRes.state : initial;
-
-    gameStateRef.current = newGame;
+    gameStateRef.current = initial;
     isProcessingAI.current = false;
     setIsAiThinking(false);
-    setGameState(newGame);
+    setGameState(initial);
+    setIsMulliganModalOpen(true);
+    setSelectedMulliganCardIds([]);
     setSelectionMode('NONE');
     setSelectedAttackerId(null);
     setSelectedHandCardId(null);
@@ -910,7 +940,7 @@ export function useGameController() {
         timestamp: Date.now(),
       },
     ]);
-    addToast('Nova partida iniciada!', 'success');
+    addToast('Nova partida iniciada! Fase de Mulligan ativa.', 'success');
   }, [addToast]);
 
   const expectedActor = getExpectedActor(gameState);
@@ -933,6 +963,12 @@ export function useGameController() {
     setIsDiscardModalOpen,
     selectedDiscardCardIds,
     setSelectedDiscardCardIds,
+    isMulliganModalOpen: isMulliganModalOpen && !gameState.players.player1?.hasMulliganed,
+    selectedMulliganCardIds,
+    handleToggleMulliganCard,
+    handleSelectAllMulliganCards,
+    handleClearMulliganSelection,
+    handleConfirmMulligan,
     logs,
     toasts,
     canPlayCard,

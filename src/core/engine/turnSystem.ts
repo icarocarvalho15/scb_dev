@@ -350,15 +350,36 @@ export function advancePhase(
     };
   }
 
-  // Se um playerId for fornecido, deve ser o jogador ativo
-  if (action && action.playerId !== state.activePlayerId) {
-    return {
-      success: false,
-      error: {
-        code: ActionErrorCode.INVALID_PLAYER,
-        message: 'Apenas o jogador ativo pode avançar a fase.',
-      },
-    };
+  // Validação de jogador autorizado a despachar ADVANCE_PHASE
+  if (action?.playerId) {
+    if (
+      state.phase === GamePhase.COMBAT &&
+      (state.combat?.attacks?.length ?? 0) > 0 &&
+      state.combat?.attackersDeclared
+    ) {
+      // Na sub-etapa de Bloqueio Livre, apenas o defensor pode avançar/concluir a defesa
+      const defenderId = getOpponentId(state, state.activePlayerId);
+      if (action.playerId !== defenderId) {
+        return {
+          success: false,
+          error: {
+            code: ActionErrorCode.INVALID_PLAYER,
+            message: 'Apenas o defensor pode concluir a declaração de bloqueios.',
+          },
+        };
+      }
+    } else {
+      // Em todas as outras etapas/fases, apenas o jogador ativo pode avançar
+      if (action.playerId !== state.activePlayerId) {
+        return {
+          success: false,
+          error: {
+            code: ActionErrorCode.INVALID_PLAYER,
+            message: 'Apenas o jogador ativo pode avançar a fase.',
+          },
+        };
+      }
+    }
   }
 
   switch (state.phase) {
@@ -438,15 +459,70 @@ export function advancePhase(
     }
 
     case GamePhase.COMBAT: {
-      // COMBAT -> END: se houver ataques pendentes, resolve o combate automaticamente
-      let nextState = cloneGameState(state);
-      if (nextState.combat?.attacks?.length > 0) {
-        const combatResult = resolveCombat(nextState, options.cardRegistry);
-        if (!combatResult.success) {
-          return combatResult;
-        }
-        nextState = combatResult.state;
+      const attacks = state.combat?.attacks ?? [];
+
+      // Caso 1: Não há ataques declarados (0 ataques).
+      // O combate é pulado/encerrado imediatamente avançando direto para END.
+      if (attacks.length === 0) {
+        const nextState = cloneGameState(state);
+        nextState.combat = {
+          active: false,
+          attacks: [],
+        };
+        nextState.phase = GamePhase.END;
+
+        const phaseEvent = createPhaseChangedEvent(nextState, {
+          fromPhase: GamePhase.COMBAT,
+          toPhase: GamePhase.END,
+          activePlayerId: nextState.activePlayerId,
+        });
+
+        const dispatchResult = dispatchEvents(nextState, [phaseEvent], {
+          cardRegistry: options.cardRegistry,
+        });
+
+        return {
+          success: true,
+          state: dispatchResult.state,
+          events: dispatchResult.emittedEvents,
+        };
       }
+
+      // Caso 2 (Fluxo Bifásico — Etapa 1): O atacante clica em avançar.
+      // Sinaliza "Terminei de declarar atacantes" (attackersDeclared = true).
+      // Permanece em COMBAT e transfere a prioridade para o defensor realizar Bloqueio Livre.
+      if (!action?.playerId || action.playerId === state.activePlayerId) {
+        if (!state.combat?.attackersDeclared) {
+          const nextState = cloneGameState(state);
+          nextState.combat = {
+            ...nextState.combat,
+            attackersDeclared: true,
+          };
+          // Permanece na GamePhase.COMBAT para o defensor agir
+          return {
+            success: true,
+            state: nextState,
+            events: [],
+          };
+        }
+        return {
+          success: false,
+          error: {
+            code: ActionErrorCode.INVALID_PLAYER,
+            message: 'Apenas o defensor pode concluir a declaração de bloqueios.',
+          },
+        };
+      }
+
+      // Caso 3 (Fluxo Bifásico — Etapa 2): O defensor clica em avançar.
+      // Sinaliza "Terminei meus bloqueios / Concluir Defesa".
+      // Combate é resolvido (danos aplicados) e a fase muda oficialmente para END.
+      let nextState = cloneGameState(state);
+      const combatResult = resolveCombat(nextState, options.cardRegistry);
+      if (!combatResult.success) {
+        return combatResult;
+      }
+      nextState = combatResult.state;
 
       if (nextState.status === GameStatus.FINISHED) {
         return { success: true, state: nextState };

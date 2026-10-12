@@ -665,24 +665,58 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(-15deg);
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #94a3b8;
-  font-size: 0.6rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  letter-spacing: 0.5px;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fde68a;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 8px rgba(245, 158, 11, 0.25);
+  z-index: 5;
+  text-transform: uppercase;
 }
 
 .scb-ready-pulse {
   position: absolute;
   inset: 0;
-  border: 1.5px solid var(--color-primary);
-  border-radius: var(--radius-sm);
-  opacity: 0.6;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  opacity: 0.8;
   pointer-events: none;
+  animation: scbReadyPulse 2s infinite ease-in-out;
+  box-shadow: inset 0 0 10px var(--color-primary-glow);
+}
+
+@keyframes scbReadyPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    box-shadow: 0 0 8px var(--color-primary-glow), inset 0 0 6px var(--color-primary-glow);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 18px var(--color-primary-glow), inset 0 0 12px var(--color-primary-glow);
+  }
+}
+
+.scb-badge-free-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #6ee7b7;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
 }
 
 /* Card Back */
@@ -1745,5 +1779,198 @@ body {
 
   .scb-phase-step .scb-phase-name {
     display: none;
+  }
+}
+
+/* ==========================================================================
+   MODAL DE MULLIGAN (ALPHA 1.0)
+   ========================================================================== */
+
+.scb-mulligan-overlay {
+  z-index: 120;
+  background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.88) 0%, rgba(5, 7, 13, 0.96) 100%);
+  backdrop-filter: blur(10px);
+}
+
+.scb-mulligan-modal {
+  max-width: 820px;
+  width: 94%;
+  background: linear-gradient(180deg, rgba(22, 33, 58, 0.95) 0%, rgba(14, 21, 38, 0.98) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(56, 189, 248, 0.2);
+  padding: 1.5rem;
+}
+
+.scb-mulligan-header {
+  margin-bottom: 1.1rem;
+}
+
+.scb-mulligan-title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scb-mulligan-icon {
+  font-size: 1.6rem;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+}
+
+.scb-mulligan-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.scb-mulligan-instructions-box {
+  background: rgba(15, 23, 42, 0.75);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+}
+
+.scb-mulligan-quick-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0 0.25rem;
+}
+
+.scb-badge-keep {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.scb-badge-replace {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fde68a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.scb-btn-xs {
+  font-size: 0.74rem;
+  padding: 3px 8px;
+}
+
+.scb-mulligan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  justify-items: center;
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 0;
+}
+
+.scb-mulligan-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(15, 23, 42, 0.6);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  width: 100%;
+}
+
+.scb-mulligan-card-wrapper:hover {
+  transform: translateY(-5px);
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.scb-mulligan-card-selected {
+  border-color: var(--color-accent-gold) !important;
+  background: rgba(245, 158, 11, 0.14) !important;
+  box-shadow: 0 0 20px var(--color-accent-gold-glow);
+  transform: translateY(-4px);
+}
+
+.scb-mulligan-card-kept {
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.scb-mulligan-status-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.scb-tag-swap {
+  color: #f59e0b;
+}
+
+.scb-tag-keep {
+  color: #38bdf8;
+}
+
+.scb-mulligan-toggle-indicator {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.scb-mulligan-card-selected .scb-mulligan-toggle-indicator {
+  color: #f59e0b;
+}
+
+.scb-mulligan-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.scb-mulligan-footer-hint {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.scb-btn-keep-hand {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 0 16px var(--color-success-glow);
+}
+
+.scb-btn-keep-hand:hover {
+  box-shadow: 0 0 24px var(--color-success-glow);
+  transform: translateY(-2px);
+}
+
+.scb-btn-replace-cards {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  font-weight: 800;
+  box-shadow: 0 0 16px var(--color-accent-gold-glow);
+}
+
+.scb-btn-replace-cards:hover {
+  box-shadow: 0 0 24px var(--color-accent-gold-glow);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 720px) {
+  .scb-mulligan-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

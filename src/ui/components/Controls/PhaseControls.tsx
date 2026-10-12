@@ -34,7 +34,7 @@ export const PhaseControls: React.FC<PhaseControlsProps> = ({
   isAiThinking,
   expectedActor,
   attacksCount,
-  hasReadyAttacker,
+  hasReadyAttacker: _hasReadyAttacker,
   player,
   debateActive,
   selectionMode,
@@ -60,12 +60,12 @@ export const PhaseControls: React.FC<PhaseControlsProps> = ({
         actionButtonText = debateActive ? 'Passar no Debate' : 'Fase de Combate ➔';
         break;
       case GamePhase.COMBAT:
-        if ((attacksCount ?? 0) === 0) {
+        if (!isPlayerExpected) {
+          actionButtonText = 'Aguardando Defesa...';
+        } else if ((attacksCount ?? 0) === 0) {
           actionButtonText = 'Pular Combate ➔';
-        } else if (hasReadyAttacker) {
-          actionButtonText = 'Concluir Ataques ➔';
         } else {
-          actionButtonText = 'Resolver Combate ➔';
+          actionButtonText = 'Concluir Ataques ➔';
         }
         break;
       case GamePhase.END:

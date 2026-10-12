@@ -1,54 +1,39 @@
 # School Card Battle (SCB) 🃏🏫
 
-![Status](https://img.shields.io/badge/Status-Alpha_Vertical_Slice-success)
+![Status](https://img.shields.io/badge/Status-FROZEN_Alpha_1.0.3-success)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)
 ![Vite](https://img.shields.io/badge/Bundler-Vite-purple)
 ![Architecture](https://img.shields.io/badge/Architecture-Engine_First-orange)
-![Tests](https://img.shields.io/badge/Tests-226_Passing-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-247_Passing-brightgreen)
 
 **School Card Battle (SCB)** é um Trading Card Game (TCG) digital competitivo com temática escolar e estética anime. O jogo combina gerenciamento de recursos, combate tático de Estudantes e um sistema único de interrupções e magias chamado **Debate**.
 
-Este projeto foi construído com uma arquitetura **Engine-First** rigorosa e desenvolvido através de um **Fluxo de Trabalho Multi-Agente (Agentic Workflow)**, onde IA e desenvolvedor humano colaboram baseados em uma documentação de Game Design e Regras (GDD) estrita e imutável.
+Construído sob a rigorosa arquitetura **Engine-First**, a lógica do SCB é perfeitamente desacoplada da interface, permitindo que a IA autônoma e os jogadores humanos obedeçam ao mesmo motor de regras determinístico, sem trapaças.
 
 ---
 
-## 🚀 Estado Atual: Alpha Jogável (Fase 11 - Vertical Slice)
+## 🚀 Versão Congelada: Alpha 1.0.3 (Completo)
 
-O projeto atingiu seu principal marco de desenvolvimento estrutural: **Uma partida completa de ponta a ponta (Humano vs IA) diretamente no navegador.** 
+O projeto atingiu seu marco estrutural máximo para a fase Alpha: **Partida Completa de Ponta a Ponta (Humano vs IA) Estável no Navegador.** 
 
-O motor de regras (`Game Engine`) é 100% puro e isolado da Interface de Usuário (`UI`). A IA e o jogador humano operam sob as mesmas restrições, validando ações através do mesmo despachador central (`applyAction`).
+### 🎯 Funcionalidades Principais Implementadas:
 
-### 🎯 Fases Concluídas (Roadmap)
-
-- [x] **Fase 0 & 1: Fundação** — Arquitetura de tipos, `GameState` imutável e gerador de estado inicial.
-- [x] **Fase 2: Turnos e Energia** — Ciclo automático de 5 fases (`START`, `MAIN`, `DEBATE`, `COMBAT`, `END`), escalonamento determinístico de Energia (1 a 10) e limites de mão.
-- [x] **Fase 3: Cartas e Campo** — Validação de custos, alocação no `BOARD` (limite de 6 Estudantes) com regra oficial de **Substituição**, e `ENVIRONMENT` (1 Ambiente ativo).
-- [x] **Fase 4: Sistema de Combate** — Combate tático onde o **alvo é sempre o Representante adversário** (exceto sob *Provocação*). O defensor possui controle total via **Bloqueio Livre**. Resolução de dano simultâneo (Influência vs Moral).
-- [x] **Fase 5 & 6: Eventos, Efeitos e Keywords** — Infraestrutura reativa (Event Bus) e Keywords orientadas a dados: *Inércia (temporária), Impulso, Provocação, Guarda, Infiltração, Diplomacia (Turno 1), Persistência, Silêncio, Inspiração, etc.*
-- [x] **Fase 7: Representantes** — Sistema de **Popularidade** reativa e ativação de **Destaque** (habilidade ultimate que custa apenas Popularidade, sem gasto de Energia).
-- [x] **Fase 8: Sistema de Debate** — Motor de interrupção mágica resolvido em **Pilha Reversa LIFO** de 4 níveis (Ação Inicial, Réplica, Tréplica, Contrarréplica) com invalidação parcial de alvos (fizzle).
-- [x] **Fase 9: AI System** — IA autônoma determinística. Utiliza geradores de ação, filtros de legalidade e heurísticas de decisão integradas diretamente ao core, sem trapaças de estado.
-- [x] **Fase 10: UI System** — Interface web em **React**, responsiva, com estética *Glassmorphism/Anime*. Tabuleiro completo, *CardComponents* dinâmicos, modais de substituição/descarte e visualização de conexões de combate em tempo real.
-- [x] **Fase 11: Vertical Slice** — Integração ponta a ponta, resolução de *soft-locks* em transições de turno assíncronas, automatização fluida da `Start Phase` e homologação E2E.
+- **Regras Imutáveis:** Validações de Fase, Jogador Ativo, Custos, Limite de Mão (8) e Limite de Campo (6 + Substituição).
+- **Turnos Determinísticos:** 5 Fases Automáticas (`START`, `MAIN`, `DEBATE`, `COMBAT`, `END`) com progressão natural de 1 a 10 de Energia.
+- **Mulligan Estratégico:** Troca modular na mão inicial de 4 cartas.
+- **Combate de Bloqueio Livre:** Os ataques sempre focam o Representante inimigo (salvo sob *Provocação*). O defensor tem a prioridade tática para designar bloqueios através de uma máquina de estados bifásica inviolável.
+- **Sistema de Debate (LIFO):** Motor de interrupções de 4 níveis (*Ação Inicial $\rightarrow$ Réplica $\rightarrow$ Tréplica $\rightarrow$ Contrarréplica*) resolvidos em pilha reversa.
+- **IA Autônoma:** Heurísticas baseadas em avaliação de atributos, controle de mesa e deduplicação de ações ilegais, rodando perfeitamente integrada no loop React.
+- **Representantes Vivos:** Destaques ultimate gratuitos baseados em gatilhos de *Popularidade* reativos (Events & Effects System).
+- **Interface Glassmorphism:** Tabuleiro imersivo renderizado em React, com conexões dinâmicas de combate, badges contextuais para as Keywords (Inércia, Impulso, etc.) e controles de fase inteligentes.
 
 ---
 
-## 🏗️ Arquitetura e Princípios de Design
+## 🏗️ Arquitetura (O Princípio Engine-First)
 
-O SCB adota padrões rígidos de engenharia de software para garantir estabilidade, zero trapaças e escalabilidade para um futuro modo Multiplayer com servidor autoritativo:
-
-1.  **Engine-First & UI Agnostic:** O frontend (React) funciona apenas como uma camada de visualização (*View Layer*). Toda lógica, permissão de jogada, bloqueio ou combate ocorre estritamente dentro da Engine TypeScript isolada.
-2.  **Imutabilidade Estrita:** Nenhuma função altera o estado global. As ações geram um novo `GameState` através do despachador central de validações.
-3.  **Data-Driven Design:** As cartas são registros estáticos no catálogo. Ao entrarem em jogo, viram instâncias (`CardInstance`) que rastreiam seus status dinâmicos (dano, inércia, silêncio), facilitando balanceamento em massa.
-4.  **Desenvolvimento por Agentes:** Construído de forma modular com *Orchestrator, Game Core Engineer, AI Engineer* e *UI Engineer* operando via prompts sistemáticos para garantir zero desvio das regras do `SCB_Rules.md`.
-
----
-
-## ⚔️ Mecânicas de Destaque
-
-*   **Bloqueio Livre (Free Block):** Diferente de jogos onde o atacante escolhe a unidade que vai bater, no SCB os ataques são focados no Representante. Cabe ao defensor a tática de usar seus Estudantes para interceptar (Bloquear) os ataques.
-*   **Debates (A Pilha):** Um sistema contido e estratégico de respostas (Ação $\rightarrow$ Réplica $\rightarrow$ Tréplica $\rightarrow$ Contrarréplica).
-*   **Representantes:** Lideram o deck, possuem vida (Moral) e acumulam *Popularidade* ao cumprir condições passivas (ex: sempre que um aliado ataca). Ao atingir o limite, liberam o *Destaque*, uma ultimate gratuita de Energia que pode virar a mesa.
+1.  **UI Agnostic (View Layer):** O React não contém regras de jogo. Todo clique no tabuleiro despacha um `ActionType` validado pelo validador central `validateAction`.
+2.  **Imutabilidade Estrita:** Ações modificam o mundo retornando um novo `GameState`. Isso bloqueia *soft-locks* e garante que todas as 247 asserções de teste automatizado (Vitest) permaneçam consistentes.
+3.  **Data-Driven Design:** As Cartas (Definições) são dissociadas de suas representações no tabuleiro (Instâncias), facilitando a adição em massa de feitiços e novos Representantes sem reescrever a engine.
 
 ---
 
@@ -57,16 +42,16 @@ O SCB adota padrões rígidos de engenharia de software para garantir estabilida
 *   **Linguagem:** TypeScript (Strict Mode)
 *   **Frontend:** React 18
 *   **Build Tool:** Vite
-*   **Test Runner:** Vitest (com 220+ testes unitários e de simulação passando)
-*   **Estilização:** CSS Vanilla Moderno (CSS Variables, Flexbox/Grid, Backdrop-filter)
+*   **Test Runner:** Vitest (com 247 testes estritos passando em 11.39s)
+*   **Estilização:** CSS Vanilla Moderno
 
 ---
 
-## ⚙️ Como Executar o Projeto Localmente
+## ⚙️ Como Executar o SCB Localmente
 
 1. **Clone o repositório:**
    ```bash
-   git clone [https://github.com/icarocarvalho15/scb_dev.git](https://github.com/icarocarvalho15/scb_dev.git)
+   git clone https://github.com/icarocarvalho15/scb_dev.git
    cd scb_dev
    ```
 
@@ -99,6 +84,6 @@ O SCB adota padrões rígidos de engenharia de software para garantir estabilida
 
 ---
 
-Desenvolvido com Inteligência Artificial.
+Desenvolvido através de uma orquestração Multi-Agente (Agentic Workflow).
 
-School Card Battle &copy DravDev - 2026.
+School Card Battle - Alpha 0.1.3 &copy; DravDev - 2026.

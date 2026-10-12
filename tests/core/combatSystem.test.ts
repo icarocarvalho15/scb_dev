@@ -1098,10 +1098,20 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
       if (!res.success) return;
       state = res.state;
 
-      // Avança a fase para END diretamente sem chamar RESOLVE_COMBAT explicitamente
+      // Fluxo bifásico: Atacante conclui ataques (attackersDeclared = true)
       res = applyAction(state, {
         type: ActionType.ADVANCE_PHASE,
         playerId: 'player1',
+      });
+      expect(res.success).toBe(true);
+      if (!res.success) return;
+      expect(res.state.phase).toBe(GamePhase.COMBAT);
+      expect(res.state.combat.attackersDeclared).toBe(true);
+
+      // Defensor conclui etapa de defesa sem bloquear -> combate resolve e avança para END
+      res = applyAction(res.state, {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: 'player2',
       });
       expect(res.success).toBe(true);
       if (!res.success) return;

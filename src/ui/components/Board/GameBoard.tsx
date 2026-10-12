@@ -7,6 +7,7 @@ import { PhaseControls } from '../Controls/PhaseControls';
 import { CardZoomModal } from '../Card/CardZoomModal';
 import { SubstitutionModal } from '../Modals/SubstitutionModal';
 import { DiscardModal } from '../Modals/DiscardModal';
+import { MulliganModal } from '../Modals/MulliganModal';
 import { GameOverModal } from '../Modals/GameOverModal';
 import { BattleLog } from '../Log/BattleLog';
 import { ToastContainer } from '../Toast/ToastContainer';
@@ -27,6 +28,12 @@ export const GameBoard: React.FC = () => {
     setIsDiscardModalOpen,
     selectedDiscardCardIds,
     setSelectedDiscardCardIds,
+    isMulliganModalOpen,
+    selectedMulliganCardIds,
+    handleToggleMulliganCard,
+    handleSelectAllMulliganCards,
+    handleClearMulliganSelection,
+    handleConfirmMulligan,
     logs,
     toasts,
     canPlayCard,
@@ -157,6 +164,18 @@ export const GameBoard: React.FC = () => {
       <CardZoomModal
         cardDefinition={inspectedCard}
         onClose={() => setInspectedCard(null)}
+      />
+
+      <MulliganModal
+        isOpen={isMulliganModalOpen}
+        handCards={player1.hand}
+        cardRegistry={cardRegistry}
+        selectedCardIds={selectedMulliganCardIds}
+        onToggleCard={handleToggleMulliganCard}
+        onConfirm={handleConfirmMulligan}
+        onSelectAll={handleSelectAllMulliganCards}
+        onClearSelection={handleClearMulliganSelection}
+        onInspectCard={(def) => setInspectedCard(def)}
       />
 
       <SubstitutionModal

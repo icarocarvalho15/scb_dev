@@ -7,6 +7,7 @@ import { getOpponentId } from '../core/engine/turnSystem';
 import { getNextDebatePlayerId } from '../core/engine/debateSystem';
 import { hasCardKeyword } from '../core/engine/keywordSystem';
 import { findCardDefinition } from '../cards/alphaCards';
+import { evaluateAiMulligan } from '../core/engine/mulliganSystem';
 import { ActionGeneratorOptions } from './types';
 
 /**
@@ -231,58 +232,70 @@ export function generateCandidateActions(
 
     case GamePhase.COMBAT: {
       if (state.activePlayerId === playerId) {
-        // Jogador atacante: pode declarar ataques com estudantes disponíveis
-        for (const student of player.board) {
-          if (!student.ready) continue;
-          if (
-            student.hasInertia &&
-            !hasCardKeyword(student, Keyword.IMPULSO, options?.cardRegistry)
-          ) {
-            continue;
-          }
-          if (hasCardKeyword(student, Keyword.SILENCIO, options?.cardRegistry)) {
-            continue;
-          }
-
-          const alreadyAttacking = state.combat?.attacks?.some(
-            (a) => a.attackerInstanceId === student.instanceId
-          );
-          if (alreadyAttacking) continue;
-
-          // Conforme Seção 29 de SCB_Rules.md: O ataque é sempre direcionado ao Representante adversário (ou Provocador)
-          if (opponent) {
-            actions.push({
-              type: ActionType.ATTACK,
-              playerId,
-              attackerInstanceId: student.instanceId,
-            });
-          }
-        }
-
-        // Opção de avançar fase (turnSystem resolve o combate automaticamente)
-        actions.push({
-          type: ActionType.ADVANCE_PHASE,
-          playerId,
-        });
-      } else {
-        // Jogador defensor: pode declarar bloqueios para ataques existentes
-        const attacks = state.combat?.attacks ?? [];
-        for (const attack of attacks) {
-          if (attack.blockerInstanceId) continue; // Já possui bloqueador
-
+        // Jogador atacante: só pode agir enquanto NÃO declarou o encerramento da etapa de ataque
+        if (!state.combat?.attackersDeclared) {
           for (const student of player.board) {
-            const alreadyBlocking = attacks.some(
-              (a) => a.blockerInstanceId === student.instanceId
-            );
-            if (alreadyBlocking) continue;
+            if (!student.ready) continue;
+            if (
+              student.hasInertia &&
+              !hasCardKeyword(student, Keyword.IMPULSO, options?.cardRegistry)
+            ) {
+              continue;
+            }
+            if (hasCardKeyword(student, Keyword.SILENCIO, options?.cardRegistry)) {
+              continue;
+            }
 
-            actions.push({
-              type: ActionType.BLOCK,
-              playerId,
-              attackerInstanceId: attack.attackerInstanceId,
-              blockerInstanceId: student.instanceId,
-            });
+            const alreadyAttacking = state.combat?.attacks?.some(
+              (a) => a.attackerInstanceId === student.instanceId
+            );
+            if (alreadyAttacking) continue;
+
+            // Conforme Seção 29 de SCB_Rules.md: O ataque é sempre direcionado ao Representante adversário (ou Provocador)
+            if (opponent) {
+              actions.push({
+                type: ActionType.ATTACK,
+                playerId,
+                attackerInstanceId: student.instanceId,
+              });
+            }
           }
+
+          // Opção de avançar fase:
+          // Se 0 ataques -> pula combate direto para END.
+          // Se >0 ataques -> sinaliza encerramento da etapa de ataque (attackersDeclared = true)
+          actions.push({
+            type: ActionType.ADVANCE_PHASE,
+            playerId,
+          });
+        }
+      } else {
+        // Jogador defensor: age na sub-etapa de Bloqueio Livre para ataques declarados
+        const attacks = state.combat?.attacks ?? [];
+        if (attacks.length > 0) {
+          for (const attack of attacks) {
+            if (attack.blockerInstanceId) continue; // Já possui bloqueador
+
+            for (const student of player.board) {
+              const alreadyBlocking = attacks.some(
+                (a) => a.blockerInstanceId === student.instanceId
+              );
+              if (alreadyBlocking) continue;
+
+              actions.push({
+                type: ActionType.BLOCK,
+                playerId,
+                attackerInstanceId: attack.attackerInstanceId,
+                blockerInstanceId: student.instanceId,
+              });
+            }
+          }
+
+          // O defensor pode (e deve poder) avançar a fase ("Terminei meus bloqueios / Concluir Defesa")
+          actions.push({
+            type: ActionType.ADVANCE_PHASE,
+            playerId,
+          });
         }
       }
       break;
@@ -313,4 +326,25 @@ export function generateCandidateActions(
   }
 
   return actions;
+}
+
+/**
+ * Gera deterministicamente uma MulliganAction candidata para a IA.
+ * Utiliza evaluateAiMulligan para avaliar as cartas e selecionar as trocas.
+ */
+export function generateMulliganAction(
+  state: GameState,
+  playerId: PlayerId,
+  options?: ActionGeneratorOptions
+): import('../core/types/action').MulliganAction | null {
+  const player = state.players[playerId];
+  if (!player || player.hasMulliganed) {
+    return null;
+  }
+  const cardsToReplace = evaluateAiMulligan(player.hand, options?.cardRegistry);
+  return {
+    type: ActionType.MULLIGAN,
+    playerId,
+    cardInstanceIdsToReplace: cardsToReplace,
+  };
 }

@@ -2,16 +2,16 @@ import { GameAction, ActionType } from '../core/types/action';
 import { GameState, GameStatus } from '../core/types/state';
 import { GamePhase } from '../core/types/phase';
 import { PlayerId } from '../core/types/player';
-import { CardDefinition, Keyword } from '../core/types/card';
+import { CardDefinition } from '../core/types/card';
 import { applyAction } from '../core/engine/gameEngine';
 import { getOpponentId } from '../core/engine/turnSystem';
 import { getNextDebatePlayerId } from '../core/engine/debateSystem';
-import { hasCardKeyword } from '../core/engine/keywordSystem';
 import { createInitialGameState } from '../core/state/createInitialGameState';
 import { generateCandidateActions } from './actionGenerator';
 import { filterLegalActions } from './legalActionFilter';
 import { chooseBestAction } from './decisionPolicy';
 import { evaluateGameState } from './evaluator';
+import { evaluateAiMulligan } from '../core/engine/mulliganSystem';
 import {
   AIPlayerConfig,
   MatchSimulationOptions,
@@ -66,23 +66,24 @@ export function chooseAction(
   // Verifica se bloquear é vantajoso em relação a não bloquear (manter o estado atual)
   if (state.phase === GamePhase.COMBAT && state.activePlayerId !== playerId) {
     const currentScore = evaluateGameState(state, playerId, weights, { cardRegistry });
-    const bestBlock = chooseBestAction(state, legalActions, playerId, {
+    const bestAction = chooseBestAction(state, legalActions, playerId, {
       weights,
       cardRegistry,
       rng,
     });
 
-    if (bestBlock) {
-      const sim = applyAction(state, bestBlock, { cardRegistry });
+    if (bestAction && bestAction.type === ActionType.BLOCK) {
+      const sim = applyAction(state, bestAction, { cardRegistry });
       if (sim.success) {
         const blockScore = evaluateGameState(sim.state, playerId, weights, { cardRegistry });
-        // Se bloquear for pior do que não bloquear (ex: suicídio desnecessário), escolhe não bloquear
+        // Se bloquear for pior do que não bloquear (ex: suicídio desnecessário), escolhe avançar a fase
         if (blockScore < currentScore) {
-          return null;
+          return { type: ActionType.ADVANCE_PHASE, playerId };
         }
       }
+      return bestAction;
     }
-    return bestBlock;
+    return bestAction ?? { type: ActionType.ADVANCE_PHASE, playerId };
   }
 
   // 3. Avalia e escolhe a melhor ação conforme heurística e desempate
@@ -115,7 +116,6 @@ export function getExpectedActor(state: GameState): PlayerId | null {
     }
 
     case GamePhase.COMBAT: {
-      const activePlayer = state.players[state.activePlayerId];
       const defenderId = getOpponentId(state, state.activePlayerId);
       const attacks = state.combat?.attacks ?? [];
 
@@ -124,39 +124,13 @@ export function getExpectedActor(state: GameState): PlayerId | null {
         return state.activePlayerId;
       }
 
-      // 2. Verifica se há pelo menos um ataque bloqueável (que NÃO possui Infiltração)
-      const hasBlockableAttack = attacks.some((a) => {
-        const attacker = activePlayer?.board.find((s) => s.instanceId === a.attackerInstanceId);
-        return attacker ? !hasCardKeyword(attacker, Keyword.INFILTRACAO) : true;
-      });
-
-      // 3. Se o atacante já encerrou a declaração de ataques (attackersDeclared === true)
+      // 2. Se o atacante já encerrou formalmente a declaração de ataques (attackersDeclared === true)
       if (state.combat?.attackersDeclared) {
-        // Se há ataque bloqueável e o defensor ainda não passou/concluiu a defesa:
-        if (hasBlockableAttack && !state.combat?.defenderPassed) {
-          return defenderId;
-        }
-        return state.activePlayerId;
-      }
-
-      // 4. Se o atacante ainda não encerrou explicitamente, verifica se ainda possui atacantes prontos aptos
-      const hasReadyAttacker = activePlayer?.board.some(
-        (s) =>
-          s.ready &&
-          !s.hasInertia &&
-          !attacks.some((a) => a.attackerInstanceId === s.instanceId)
-      );
-
-      if (hasReadyAttacker) {
-        return state.activePlayerId;
-      }
-
-      // 5. Atacante não tem mais atacantes prontos:
-      // Se há ataque sem Infiltração e o defensor não concluiu a defesa, prioridade é do defensor
-      if (hasBlockableAttack && !state.combat?.defenderPassed) {
         return defenderId;
       }
 
+      // 3. Enquanto o atacante não despachou ADVANCE_PHASE (attackersDeclared !== true),
+      // a prioridade permanece estritamente com o atacante para declarar novos ataques ou confirmar.
       return state.activePlayerId;
     }
   }
@@ -187,11 +161,11 @@ export function stepGame(
   });
 
   if (!action) {
-    // Se o defensor optou por não bloquear, o atacante avança a fase
+    // Se o defensor ficou sem ações ou optou por não bloquear, o defensor avança a fase (concluindo defesa)
     if (state.phase === GamePhase.COMBAT && actorId !== state.activePlayerId) {
       const advanceAction: GameAction = {
         type: ActionType.ADVANCE_PHASE,
-        playerId: state.activePlayerId,
+        playerId: actorId,
       };
       const result = applyAction(state, advanceAction, {
         cardRegistry: options?.cardRegistry,
@@ -250,6 +224,22 @@ export class AIPlayer {
   }
 
   /**
+   * Gera a ação de Mulligan da IA baseada na heurística de abertura de curva.
+   */
+  getMulliganAction(state: GameState): GameAction | null {
+    const player = state.players[this.playerId];
+    if (!player || player.hasMulliganed) {
+      return null;
+    }
+    const cardsToReplace = evaluateAiMulligan(player.hand, this.cardRegistry);
+    return {
+      type: ActionType.MULLIGAN,
+      playerId: this.playerId,
+      cardInstanceIdsToReplace: cardsToReplace,
+    };
+  }
+
+  /**
    * Escolhe a melhor ação legal para o estado atual.
    */
   chooseAction(state: GameState): GameAction | null {
@@ -282,19 +272,17 @@ export class AIPlayer {
 
       const action = this.chooseAction(currentState);
       if (!action) {
-        // Se jogador ativo não tem mais ações, avança a fase
-        if (currentState.activePlayerId === this.playerId) {
-          const advanceAction: GameAction = {
-            type: ActionType.ADVANCE_PHASE,
-            playerId: this.playerId,
-          };
-          const res = applyAction(currentState, advanceAction, {
-            cardRegistry: this.cardRegistry,
-          });
-          if (res.success) {
-            currentState = res.state;
-            actionsTaken.push(advanceAction);
-          }
+        // Se a IA não tem mais ações a realizar, avança a fase com a sua identidade (ativo ou defensor em combate)
+        const advanceAction: GameAction = {
+          type: ActionType.ADVANCE_PHASE,
+          playerId: this.playerId,
+        };
+        const res = applyAction(currentState, advanceAction, {
+          cardRegistry: this.cardRegistry,
+        });
+        if (res.success) {
+          currentState = res.state;
+          actionsTaken.push(advanceAction);
         }
         break;
       }
@@ -358,6 +346,25 @@ export function simulateMatch(
   let actionCount = 0;
   let consecutivePasses = 0;
 
+  // Resolução determinística do Mulligan inicial para ambos os jogadores
+  for (const pid of ['player1', 'player2'] as PlayerId[]) {
+    const pl = state.players[pid];
+    if (pl && !pl.hasMulliganed) {
+      const cardsToReplace = evaluateAiMulligan(pl.hand, options.cardRegistry);
+      const mulliganAction: GameAction = {
+        type: ActionType.MULLIGAN,
+        playerId: pid,
+        cardInstanceIdsToReplace: cardsToReplace,
+      };
+      const res = applyAction(state, mulliganAction, { cardRegistry: options.cardRegistry });
+      if (res.success) {
+        state = res.state;
+        history.push(mulliganAction);
+        actionCount++;
+      }
+    }
+  }
+
   while (
     state.status !== GameStatus.FINISHED &&
     state.turn <= maxTurns &&
@@ -372,11 +379,11 @@ export function simulateMatch(
     const action = ai.chooseAction(state);
 
     if (!action) {
-      // Se defensor optou por não bloquear em combate, atacante avança a fase
+      // Se defensor optou por não bloquear em combate, defensor avança a fase (concluindo defesa)
       if (state.phase === GamePhase.COMBAT && actorId !== state.activePlayerId) {
         const adv: GameAction = {
           type: ActionType.ADVANCE_PHASE,
-          playerId: state.activePlayerId,
+          playerId: actorId,
         };
         const res = applyAction(state, adv, { cardRegistry: options.cardRegistry });
         if (!res.success) {
