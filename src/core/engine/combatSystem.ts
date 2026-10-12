@@ -73,11 +73,15 @@ export function isTargetRepresentative(
 /**
  * Validação pura e determinística para declaração de ataque (ActionType.ATTACK).
  *
- * Conforme as 5 Regras Oficiais de Combate do SCB:
- * 1. O jogador ativo escolhe seus estudantes para atacar o Representante adversário (ou estudantes).
- * 2. Bloqueio Livre: Se o oponente possuir estudantes em campo, qualquer estudante pode bloquear (não é exclusivo de Guarda).
- * 3. Provocação: Se o defensor tiver um estudante com Provocação em campo, o atacante é obrigado a declará-lo como alvo do ataque (protegendo o Representante e outros estudantes de serem os alvos iniciais).
- * 4. Infiltração: Um atacante com Infiltração ignora a regra de Provocação (pode focar direto no Representante) e não pode ser bloqueado por nenhum estudante, nem mesmo os que têm Guarda.
+ * Conforme as Regras Oficiais de Combate do SCB (docs/rules/SCB_Rules.md Seção 29):
+ * 1. Todo ataque declarado é SEMPRE e AUTOMATICAMENTE direcionado ao Representante adversário.
+ *    O atacante não escolhe o alvo.
+ * 2. Provocação: A única exceção é se o defensor possuir um Estudante com Provocação em campo,
+ *    o que obriga o ataque a ir para ele (salvo se o atacante tiver Infiltração).
+ * 3. Infiltração: Um atacante com Infiltração ignora Provocação (foca direto no Representante)
+ *    e não pode ser bloqueado por nenhum estudante, nem mesmo os que têm Guarda.
+ * 4. Bloqueio Livre: Após os ataques serem declarados, o jogador defensor escolhe livremente quais
+ *    de seus Estudantes interceptarão os ataques (qualquer estudante pode bloquear).
  * 5. Diplomacia: Continua absoluta no Turno 1 (impede ataque direto ao Representante, mesmo com Impulso ou Infiltração).
  */
 export function validateAttack(
@@ -185,7 +189,7 @@ export function validateAttack(
     };
   }
 
-  // 8. Identificação do adversário e validação de alvo
+  // 8. Identificação do adversário e determinação normativa de alvo
   const opponentId = getOpponentId(state, action.playerId);
   const opponent = state.players[opponentId];
   if (!opponent) {
@@ -198,24 +202,62 @@ export function validateAttack(
     };
   }
 
-  const isRepTarget = isTargetRepresentative(action.targetId, opponent);
+  const defaultRepTargetId = opponent.representative?.definitionId ?? opponent.id;
+  const provocationStudent = opponent.board.find((s) =>
+    hasCardKeyword(s, Keyword.PROVOCACAO, registry)
+  );
+  const hasInfiltration = hasCardKeyword(attacker, Keyword.INFILTRACAO, registry);
+
+  let resolvedTargetId: string;
+  let isRepTarget: boolean;
   let targetStudent: CardInstance | undefined;
 
-  if (!isRepTarget) {
-    targetStudent = opponent.board.find((s) => s.instanceId === action.targetId);
-    if (!targetStudent || targetStudent.zone !== CardZone.BOARD) {
-      return {
-        valid: false,
-        error: {
-          code: ActionErrorCode.INVALID_TARGET,
-          message:
-            'Alvo inválido: Deve ser um Estudante adversário em campo ou o Representante adversário.',
-        },
-      };
+  if (provocationStudent && !hasInfiltration) {
+    // Defensor possui Provocação e atacante não tem Infiltração:
+    // O ataque é obrigatoriamente direcionado ao Estudante com Provocação.
+    if (action.targetId) {
+      const explicitStudent = opponent.board.find((s) => s.instanceId === action.targetId);
+      const isExplicitProvocative =
+        explicitStudent && hasCardKeyword(explicitStudent, Keyword.PROVOCACAO, registry);
+      if (!isExplicitProvocative) {
+        return {
+          valid: false,
+          error: {
+            code: ActionErrorCode.INVALID_TARGET,
+            message:
+              'O oponente possui Estudante com Provocação em campo. O ataque é obrigatoriamente direcionado ao Estudante com Provocação.',
+          },
+        };
+      }
+      resolvedTargetId = action.targetId;
+      targetStudent = explicitStudent;
+    } else {
+      resolvedTargetId = provocationStudent.instanceId;
+      targetStudent = provocationStudent;
     }
+    isRepTarget = false;
+  } else {
+    // Sem Provocação ou atacante tem Infiltração:
+    // O ataque é sempre e automaticamente direcionado ao Representante adversário.
+    if (action.targetId) {
+      if (!isTargetRepresentative(action.targetId, opponent)) {
+        return {
+          valid: false,
+          error: {
+            code: ActionErrorCode.INVALID_TARGET,
+            message:
+              'Ataques declarados são sempre direcionados ao Representante adversário. O atacante não escolhe Estudantes como alvo direto (salvo Provocação).',
+          },
+        };
+      }
+      resolvedTargetId = action.targetId;
+    } else {
+      resolvedTargetId = defaultRepTargetId;
+    }
+    isRepTarget = true;
   }
 
-  // 9. Regra 5: Diplomacia — Continua absoluta no Turno 1 (impede ataque direto ao Representante, mesmo com Impulso ou Infiltração)
+  // 9. Diplomacia — Continua absoluta no Turno 1 (impede ataque direto ao Representante, mesmo com Impulso ou Infiltração)
   if (isRepTarget && isDiplomacyActive(state, action.playerId)) {
     return {
       valid: false,
@@ -227,45 +269,11 @@ export function validateAttack(
     };
   }
 
-  // 10. Regras 3 e 4: Provocação e Infiltração
-  const opponentHasProvocation = opponent.board.some((s) =>
-    hasCardKeyword(s, Keyword.PROVOCACAO, registry)
-  );
-  const hasInfiltration = hasCardKeyword(attacker, Keyword.INFILTRACAO, registry);
-
-  if (opponentHasProvocation && !hasInfiltration) {
-    // Se o defensor possuir Estudante com Provocação, o atacante é obrigado a declará-lo como alvo
-    // (protegendo o Representante e outros estudantes de serem os alvos iniciais).
-    if (isRepTarget) {
-      return {
-        valid: false,
-        error: {
-          code: ActionErrorCode.INVALID_TARGET,
-          message:
-            'O oponente possui Estudante com Provocação em campo. O atacante é obrigado a declará-lo como alvo do ataque.',
-        },
-      };
-    }
-
-    const isTargetProvocative =
-      targetStudent && hasCardKeyword(targetStudent, Keyword.PROVOCACAO, registry);
-    if (!isTargetProvocative) {
-      return {
-        valid: false,
-        error: {
-          code: ActionErrorCode.INVALID_TARGET,
-          message:
-            'O oponente possui Estudante com Provocação em campo. O atacante é obrigado a declará-lo como alvo do ataque.',
-        },
-      };
-    }
-  }
-
   return {
     valid: true,
     details: {
       attacker,
-      targetId: action.targetId,
+      targetId: resolvedTargetId,
       isRepresentativeTarget: isRepTarget,
       targetStudent,
     },
@@ -310,18 +318,22 @@ export function declareAttack(
     nextState.combat = { active: false, attacks: [] };
   }
 
+  const targetId = validation.details.targetId;
+
   nextState.combat.attacks.push({
     attackerInstanceId: action.attackerInstanceId,
-    targetId: action.targetId,
+    targetId,
   });
   nextState.combat.active = true;
+  nextState.combat.attackersDeclared = false;
+  nextState.combat.defenderPassed = false;
 
   // Emite evento normativo de declaração de ataque e resolve via barramento determinístico
   // (Popularidade do Daichi e outros efeitos reativos disparam via data-driven triggers)
   const attackEvent = createStudentAttackedEvent(nextState, {
     playerId: action.playerId,
     attackerInstanceId: action.attackerInstanceId,
-    targetId: action.targetId,
+    targetId,
   });
 
   const dispatchResult = dispatchEvents(nextState, [attackEvent], {
@@ -734,6 +746,8 @@ export function resolveCombat(
   // 4. Limpeza da fase de combate
   nextState.combat.attacks = [];
   nextState.combat.active = false;
+  nextState.combat.attackersDeclared = false;
+  nextState.combat.defenderPassed = false;
 
   // 5. Despacho dos eventos acumulados do combate no barramento determinístico
   const dispatchResult = dispatchEvents(nextState, combatEvents, {

@@ -48,7 +48,7 @@ export function scoreLegalActions(
       case ActionType.ATTACK: {
         score += 5; // Recompensa iniciativa ofensiva
 
-        if (opponent && isTargetRepresentative(action.targetId, opponent)) {
+        if (opponent && (!action.targetId || isTargetRepresentative(action.targetId, opponent))) {
           score += 15; // Pressão direta ao Representante
         } else {
           // Bônus se removeu um Estudante inimigo do campo

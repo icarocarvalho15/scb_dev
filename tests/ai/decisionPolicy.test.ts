@@ -9,6 +9,7 @@ import {
   ALPHA_STUDENT_NOVATO,
   ALPHA_STUDENT_REBELDE,
   ALPHA_STUDENT_ATLETA_IMPULSO,
+  ALPHA_STUDENT_PROVOCADOR,
   createCardInstance,
   GameAction,
 } from '../../src/core';
@@ -85,8 +86,11 @@ describe('AI System — DecisionPolicy (src/ai/decisionPolicy.ts)', () => {
       const attacker = createCustomStudent(ALPHA_STUDENT_REBELDE, 'player1', 1);
       state.players['player1'].board = [attacker];
 
-      // Novato inimigo: 1 Influence, 2 Moral (vai morrer, nosso Rebelde sobrevive)
-      const enemy = createCustomStudent(ALPHA_STUDENT_NOVATO, 'player2', 2);
+      // Provocador inimigo: 1 Influence, 2 Moral (vai morrer, nosso Rebelde sobrevive)
+      const enemy = createCustomStudent(ALPHA_STUDENT_PROVOCADOR, 'player2', 2, {
+        currentInfluence: 1,
+        currentMorale: 2,
+      });
       state.players['player2'].board = [enemy];
 
       const legalActions: GameAction[] = [

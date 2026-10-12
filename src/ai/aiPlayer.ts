@@ -2,10 +2,11 @@ import { GameAction, ActionType } from '../core/types/action';
 import { GameState, GameStatus } from '../core/types/state';
 import { GamePhase } from '../core/types/phase';
 import { PlayerId } from '../core/types/player';
-import { CardDefinition } from '../core/types/card';
+import { CardDefinition, Keyword } from '../core/types/card';
 import { applyAction } from '../core/engine/gameEngine';
 import { getOpponentId } from '../core/engine/turnSystem';
 import { getNextDebatePlayerId } from '../core/engine/debateSystem';
+import { hasCardKeyword } from '../core/engine/keywordSystem';
 import { createInitialGameState } from '../core/state/createInitialGameState';
 import { generateCandidateActions } from './actionGenerator';
 import { filterLegalActions } from './legalActionFilter';
@@ -114,31 +115,48 @@ export function getExpectedActor(state: GameState): PlayerId | null {
     }
 
     case GamePhase.COMBAT: {
-      // Verifica se o atacante ainda possui estudantes prontos para declarar ataque
       const activePlayer = state.players[state.activePlayerId];
+      const defenderId = getOpponentId(state, state.activePlayerId);
+      const attacks = state.combat?.attacks ?? [];
+
+      // 1. Se não há ataques declarados, a prioridade é do atacante (declarar ataques ou pular combate)
+      if (attacks.length === 0) {
+        return state.activePlayerId;
+      }
+
+      // 2. Verifica se há pelo menos um ataque bloqueável (que NÃO possui Infiltração)
+      const hasBlockableAttack = attacks.some((a) => {
+        const attacker = activePlayer?.board.find((s) => s.instanceId === a.attackerInstanceId);
+        return attacker ? !hasCardKeyword(attacker, Keyword.INFILTRACAO) : true;
+      });
+
+      // 3. Se o atacante já encerrou a declaração de ataques (attackersDeclared === true)
+      if (state.combat?.attackersDeclared) {
+        // Se há ataque bloqueável e o defensor ainda não passou/concluiu a defesa:
+        if (hasBlockableAttack && !state.combat?.defenderPassed) {
+          return defenderId;
+        }
+        return state.activePlayerId;
+      }
+
+      // 4. Se o atacante ainda não encerrou explicitamente, verifica se ainda possui atacantes prontos aptos
       const hasReadyAttacker = activePlayer?.board.some(
         (s) =>
           s.ready &&
-          !state.combat?.attacks?.some((a) => a.attackerInstanceId === s.instanceId)
+          !s.hasInertia &&
+          !attacks.some((a) => a.attackerInstanceId === s.instanceId)
       );
 
       if (hasReadyAttacker) {
         return state.activePlayerId;
       }
 
-      // Se há ataques declarados sem bloqueador, defensor tem prioridade para bloquear
-      const defenderId = getOpponentId(state, state.activePlayerId);
-      const defender = state.players[defenderId];
-      const unblockedAttacks = (state.combat?.attacks ?? []).filter((a) => !a.blockerInstanceId);
-      const hasAvailableBlocker = defender?.board.some(
-        (s) => !state.combat?.attacks?.some((a) => a.blockerInstanceId === s.instanceId)
-      );
-
-      if (unblockedAttacks.length > 0 && hasAvailableBlocker) {
+      // 5. Atacante não tem mais atacantes prontos:
+      // Se há ataque sem Infiltração e o defensor não concluiu a defesa, prioridade é do defensor
+      if (hasBlockableAttack && !state.combat?.defenderPassed) {
         return defenderId;
       }
 
-      // Caso contrário, jogador ativo avança a fase / resolve combate
       return state.activePlayerId;
     }
   }

@@ -10,13 +10,13 @@
 
 **Projeto:** School Card Battle (SCB)
 
-**Fase atual:** FASE 10 — UI SYSTEM
+**Fase atual:** FASE 12 / 13 — POLISH & ALPHA RELEASE
 
-**Objetivo atual:** Construir a interface visual interativa para um Alpha jogável local contra IA.
+**Objetivo atual:** Implementação do Mulligan, polimento visual e UX final, balanceamento empírico e congelamento da versão Alpha 1.0.
 
 **Status geral:** IN_PROGRESS
 
-**Última atualização:** 2026-10-09
+**Última atualização:** 2026-10-11
 
 ---
 
@@ -65,7 +65,7 @@ Início
 | Phases                | VERIFIED    |   CRITICAL | Transição determinística de fases  |
 | Energy                | VERIFIED    |   CRITICAL | Escala 1 a 10 e restauração        |
 | Draw                  | VERIFIED    |       HIGH | Compra na Start Phase + Deckout    |
-| Hand / Mulligan       | VERIFIED    |       HIGH | Limite 8 cartas + corte/descarte   |
+| Hand / Mulligan       | IN_PROGRESS |       HIGH | Limite 8 cartas VERIFIED; Mulligan em integração |
 | Deck System           | VERIFIED    |       HIGH | Transferência DECK -> HAND         |
 | Board                 | VERIFIED    |       HIGH | Limite de 6 Estudantes e alocação na zona BOARD |
 | Substituição          | VERIFIED    |       HIGH | Regra normativa no 6º estudante com descarte do antigo |
@@ -83,7 +83,7 @@ Início
 | Keywords              | VERIFIED    |       HIGH | Centralizador modular (keywordSystem.ts) com catálogo Alpha completo e testes |
 | Representative System | VERIFIED    |       HIGH | Moral 20, Popularidade reativa e Destaque operando em Daichi/Akira |
 | Popularidade          | VERIFIED    |       HIGH | Gatilho data-driven funcional via barramento de eventos |
-| Destaque              | VERIFIED    |       HIGH | Desbloqueio automático via requisito de Popularidade |
+| Destaque              | VERIFIED    |       HIGH | Desbloqueio automático via requisito de Popularidade (0 Energia) |
 | Debate System         | VERIFIED    |       HIGH | Pilha LIFO de 4 níveis, target invalidation parcial e ações de debate |
 | AI                    | VERIFIED    |   CRITICAL | ActionGenerator, LegalActionFilter, Evaluator, DecisionPolicy, AIPlayer e Simulações |
 | UI Board              | VERIFIED    |   CRITICAL | Mesa modular com OpponentArea, PlayerArea, CentralZone e slots |
@@ -91,8 +91,8 @@ Início
 | Combat UI             | VERIFIED    |       HIGH | Visualização de confrontos, setas e seleção de bloqueador |
 | Debate UI             | VERIFIED    |       HIGH | Pilha LIFO de 4 níveis, identificação de réplica e controle |
 | Integration           | VERIFIED    |   CRITICAL | useGameController orquestrando Engine First e IA autônoma |
-| QA                    | NOT_STARTED |   CRITICAL | —                                  |
-| Alpha Release         | NOT_STARTED |   CRITICAL | —                                  |
+| QA                    | VERIFIED    |   CRITICAL | Homologação E2E, 226 testes verdes e relatório SCB_QA_REPORT.md |
+| Alpha Release         | IN_PROGRESS |   CRITICAL | Mulligan, polish visual e congelamento Alpha 1.0 |
 
 ---
 
@@ -110,10 +110,10 @@ Início
 | 7. Representantes    | VERIFIED    | Popularidade e Destaque funcionam              |
 | 8. Debate            | VERIFIED    | Debate completo funciona                       |
 | 9. IA                | VERIFIED    | IA completa partidas                           |
-| 10. UI               | VERIFIED    | Interface gráfica interativa e responsiva operacional |
-| 11. Vertical Slice   | IN_PROGRESS | Partida completa jogável ponta a ponta         |
-| 12. QA               | NOT_STARTED | Sem bugs CRITICAL conhecidos                   |
-| 13. Alpha            | NOT_STARTED | Alpha funcional                                |
+10: | 10. UI               | VERIFIED    | Interface gráfica interativa e responsiva operacional |
+11: | 11. Vertical Slice   | VERIFIED    | Partida completa jogável ponta a ponta homologada |
+12: | 12. QA               | VERIFIED    | Sem bugs CRITICAL conhecidos (SCB_QA_REPORT.md emitido) |
+13: | 13. Alpha            | IN_PROGRESS | Mulligan integrado, polish e congelamento Alpha 1.0 |
 
 ---
 
@@ -129,8 +129,8 @@ Início
 | docs/rules/SCB_Architecture.md  | READY       | Arquitetura                                |
 | docs/rules/SCB_Balance.md       | READY       | Balanceamento                              |
 | docs/rules/SCB_AUDIT.md         | READY       | Relatório de auditoria técnica (Fase 0)    |
-| docs/rules/SCB_QA_REPORT.md     | NOT_STARTED | Criado durante QA                          |
-| docs/rules/SCB_ALPHA_STATUS.md  | NOT_STARTED | Criado no fechamento do Alpha              |
+| docs/rules/SCB_QA_REPORT.md     | READY       | Emitido e consolidado pós-playtest da Fase 11 |
+| docs/rules/SCB_ALPHA_STATUS.md  | IN_PROGRESS | Criado no fechamento do Alpha 1.0          |
 
 ---
 
@@ -251,15 +251,19 @@ Nenhum problema registrado.
 
 # 10. Próxima Missão
 
-**MISSÃO:** FASE 11 — Vertical Slice (Partida Completa Jogável, Validação e Balanceamento do Alpha).
+**MISSÃO:** FASE 12 / 13 — Polish, Mulligan & Alpha Release 1.0 (Implementação do Mulligan, Polimento de UX e Congelamento Alpha).
 
-**Responsável:** Tech Lead & Game Designer
+**Responsável:** Tech Lead & UI / Game Core Engineers
 
 **Objetivo:**
-* Validação ponta a ponta do fluxo completo de gameplay humano vs IA no navegador e homologação da experiência de usuário.
+* Implementar o fluxo normativo de Mulligan Parcial (Seção 24 de SCB_Rules.md e Seção 6.2 do GDD) na inicialização da partida (Humano e IA).
+* Realizar os ajustes estéticos e de acabamento final na interface React e Design System.
+* Congelar a versão Alpha 1.0 de School Card Battle e emitir o documento formal `docs/rules/SCB_ALPHA_STATUS.md`.
 
 **Critério de conclusão:**
-* Partidas completas disputadas com feedback fluido, sem regressões de regras e estabilidade comprovada.
+* Mulligan operacional no setup sem quebrar o fluxo autônomo da IA nem o avanço automático da Start Phase.
+* 100% de testes verdes no Vitest com expansão da cobertura para a regra de Mulligan.
+* Compilação limpa em TypeScript e emissão de `docs/rules/SCB_ALPHA_STATUS.md`.
 
 ---
 
@@ -267,6 +271,8 @@ Nenhum problema registrado.
 
 | Data       | Alteração                                                                 | Responsável    |
 | ---------- | ------------------------------------------------------------------------- | -------------- |
+| 2026-10-11 | Playtest Hotfix (Fase 11): Resolução de 4 bugs críticos (Bloqueio Livre para defensor, exibição do bloqueador no CentralZone, limpeza de Inércia no turnSystem e Destaque a 0 de Energia, 226 testes verdes) | Game Core & UI Engineers |
+| 2026-10-10 | Conclusão da Fase 11 (Vertical Slice: Homologação ponta a ponta Humano vs IA, implementação do Destaque no engine, prevenção de 7 soft-locks de UI/Reatividade, 218 testes verdes e emissão de SCB_QA_REPORT.md) | QA & Integration Engineers |
 | 2026-10-09 | Conclusão da Fase 10 (UI System: Interface gráfica completa em React, Board modular, CardComponent rico, CentralZone de Combate e Debates, PhaseControls, Modais e integração Engine-First com AIPlayer) | UI Engineer |
 | 2026-10-09 | Conclusão da Fase 9 (AI System: ActionGenerator, LegalActionFilter, EvaluationFunction, DecisionPolicy, AIPlayer e Simulação Determinística) | AI Engineer |
 | 2026-10-09 | Conclusão da Fase 8 (Debate System: Pilha LIFO 4 níveis, Invalidação Parcial, START/RESPOND/PASS/RESOLVE) | Debate & Rules Engineers |
@@ -283,6 +289,18 @@ Nenhum problema registrado.
 ---
 
 # 12. Histórico de Fases
+
+## Fase 11 — Vertical Slice
+
+**Status:** VERIFIED
+
+**Início:** 2026-10-10
+
+**Conclusão:** 2026-10-11
+
+**Resultado:** Homologação e validação técnica ponta a ponta da experiência jogável do Alpha (Humano vs IA). Implementação do subsistema de Destaque dos Representantes (`representativeSystem.ts`) integrado ao despachador puro `gameEngine.ts` com reversão de bônus no final de turno (`turnSystem.ts`) e geração de ações na IA (`actionGenerator.ts`). Resolução de 7 bugs e riscos de soft-lock identificados durante os testes exploratórios iniciais e consolidação no playtest manual através de 4 hotfixes críticos: garantia de prioridade para o defensor humano/IA declarar Bloqueio Livre (Seção 29 de SCB_Rules.md); correção visual da resolução de atributos de combatentes no modal central `COMBATE DECLARADO` em `CentralZone.tsx`; garantia estrita de limpeza de `Inércia` temporária em `turnSystem.ts` e `keywordSystem.ts`; e atualização normativa e sistêmica do Destaque para custar 0 Energia (exigindo unicamente Popularidade). Suíte de testes automatizados expandida para 226 testes 100% verdes no Vitest (15 arquivos) com build TypeScript sem erros. Emissão e consolidação de `docs/rules/SCB_QA_REPORT.md`.
+
+---
 
 ## Fase 10 — UI System
 
@@ -439,7 +457,7 @@ O Alpha será considerado funcional somente quando:
 * [x] Derrota funciona
 * [x] Partida pode ser reiniciada
 * [x] UI está sincronizada com GameState
-* [ ] Não existem bugs CRITICAL conhecidos
+* [x] Não existem bugs CRITICAL conhecidos
 
 ---
 

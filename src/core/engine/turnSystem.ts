@@ -123,10 +123,13 @@ export function resolveStartPhase(state: GameState): GameState {
     activePlayer.energy = activePlayer.maxEnergy;
   }
 
-  // 3. Preparação dos Estudantes em campo (remoção de Inércia de turnos anteriores)
+  // 3. Preparação dos Estudantes em campo (remoção estrita de Inércia de turnos anteriores)
   for (const student of activePlayer.board) {
     student.ready = true;
     student.hasInertia = false;
+    student.statuses = student.statuses.filter(
+      (s) => !s.toLowerCase().includes('inercia') && !s.toLowerCase().includes('inércia')
+    );
   }
 
   // 4. Compra obrigatória de 1 carta
@@ -216,10 +219,22 @@ export function resolveEndPhase(
     };
   }
 
-  // 1. Limpeza de efeitos temporários e status expirados neste turno
+  // 1. Limpeza de efeitos temporários, status expirados e Inércia ao final do turno
   for (const student of activePlayer.board) {
+    student.hasInertia = false;
+    if (student.statuses.includes('TEMP_HIGHLIGHT_BUFF')) {
+      student.currentInfluence = Math.max(0, (student.currentInfluence ?? 1) - 1);
+      student.currentMorale = Math.max(1, (student.currentMorale ?? 1) - 1);
+      if (student.maxMorale && student.maxMorale > 1) {
+        student.maxMorale -= 1;
+      }
+    }
     student.statuses = student.statuses.filter(
-      (s) => !s.startsWith('TEMP_') && s !== 'UNTIL_END_OF_TURN'
+      (s) =>
+        !s.startsWith('TEMP_') &&
+        s !== 'UNTIL_END_OF_TURN' &&
+        !s.toLowerCase().includes('inercia') &&
+        !s.toLowerCase().includes('inércia')
     );
   }
 

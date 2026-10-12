@@ -67,6 +67,11 @@ export function hasKeyword(
 ): boolean {
   // Se for CardInstance
   if ('instanceId' in card) {
+    // Inércia é estritamente temporária: se a instância já teve a Inércia removida, ela não possui mais Inércia
+    if (keyword === Keyword.INERCIA) {
+      return card.hasInertia ?? false;
+    }
+
     if (card.statuses && card.statuses.length > 0) {
       const keyLower = keyword.toLowerCase();
       const hasStatus = card.statuses.some((s) => {

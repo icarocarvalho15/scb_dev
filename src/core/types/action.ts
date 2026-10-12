@@ -34,7 +34,7 @@ export interface AttackAction {
   type: ActionType.ATTACK;
   playerId: PlayerId;
   attackerInstanceId: string;
-  targetId: string; // Pode ser um Estudante adversário ou o Representante adversário
+  targetId?: string; // Opcional: determinado automaticamente pela Engine (Representante ou Provocador)
 }
 
 export interface BlockAction {

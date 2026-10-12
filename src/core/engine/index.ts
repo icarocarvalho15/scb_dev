@@ -5,5 +5,6 @@ export * from './combatSystem';
 export * from './eventSystem';
 export * from './keywordSystem';
 export * from './debateSystem';
+export * from './representativeSystem';
 export * from './gameEngine';
 

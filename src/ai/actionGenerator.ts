@@ -83,7 +83,19 @@ export function generateCandidateActions(
           }
         }
 
-        // Opção B: Avançar para a Debate Phase
+        // Opção B: Ativar Destaque do Representante se disponível (requisito exclusivo: Popularidade)
+        if (
+          player.representative?.highlightAvailable ||
+          (player.representative &&
+            player.representative.popularity >= player.representative.popularityRequirement)
+        ) {
+          actions.push({
+            type: ActionType.ACTIVATE_HIGHLIGHT,
+            playerId,
+          });
+        }
+
+        // Opção C: Avançar para a Debate Phase
         actions.push({
           type: ActionType.ADVANCE_PHASE,
           playerId,
@@ -237,24 +249,13 @@ export function generateCandidateActions(
           );
           if (alreadyAttacking) continue;
 
-          // Alvo: Representante adversário
+          // Conforme Seção 29 de SCB_Rules.md: O ataque é sempre direcionado ao Representante adversário (ou Provocador)
           if (opponent) {
             actions.push({
               type: ActionType.ATTACK,
               playerId,
               attackerInstanceId: student.instanceId,
-              targetId: opponent.id,
             });
-
-            // Alvo: cada estudante adversário no campo
-            for (const enemyStudent of opponent.board) {
-              actions.push({
-                type: ActionType.ATTACK,
-                playerId,
-                attackerInstanceId: student.instanceId,
-                targetId: enemyStudent.instanceId,
-              });
-            }
           }
         }
 

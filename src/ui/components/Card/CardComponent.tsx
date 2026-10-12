@@ -1,5 +1,6 @@
 import React from 'react';
-import { CardInstance, CardDefinition, CardType } from '../../../core/types/card';
+import { CardInstance, CardDefinition, CardType, Keyword } from '../../../core/types/card';
+import { CardZone } from '../../../core/types/zone';
 import { findCardDefinition } from '../../../cards/alphaCards';
 
 export interface CardComponentProps {
@@ -150,11 +151,18 @@ export const CardComponent: React.FC<CardComponentProps> = ({
       {/* Keywords (Badges) */}
       {definition.keywords && definition.keywords.length > 0 && (
         <div className="scb-card-keywords">
-          {definition.keywords.map((kw, idx) => (
-            <span key={idx} className="scb-keyword-badge" title={`Palavra-chave: ${kw}`}>
-              {kw}
-            </span>
-          ))}
+          {definition.keywords
+            .filter((kw) => {
+              if (kw === Keyword.INERCIA && cardInstance?.zone === CardZone.BOARD && !hasInertia) {
+                return false;
+              }
+              return true;
+            })
+            .map((kw, idx) => (
+              <span key={idx} className="scb-keyword-badge" title={`Palavra-chave: ${kw}`}>
+                {kw}
+              </span>
+            ))}
         </div>
       )}
 

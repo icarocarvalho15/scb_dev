@@ -190,6 +190,8 @@ Destaque é a habilidade especial do Representante.
 
 Quando a Popularidade necessária é atingida, o Destaque fica disponível.
 
+O Destaque do Representante NÃO custa Energia. O único requisito e custo para ativar o Destaque é possuir a Popularidade exigida.
+
 O Destaque pode ser utilizado conforme as regras específicas do Representante.
 
 Após sua utilização, a Popularidade pode voltar a ser acumulada para permitir futuras ativações.
@@ -766,7 +768,7 @@ Ganha Popularidade quando um Estudante aliado declara um ataque.
 
 Custo atual de referência:
 
-> 5 Energia.
+> 5 Popularidade.
 
 Efeito:
 
@@ -789,7 +791,7 @@ Ganha Popularidade quando um Debate é resolvido.
 
 Custo atual de referência:
 
-> 5 Energia.
+> 5 Popularidade.
 
 Efeito:
 

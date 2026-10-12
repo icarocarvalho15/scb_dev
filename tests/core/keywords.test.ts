@@ -479,7 +479,9 @@ describe('Keywords Engine — Fase 6: Validação Completa de Keywords do Alpha'
     it('Proteção NÃO impede ser atacado em combate', () => {
       const state = createCombatReadyState();
       const attacker = createTestStudent(ALPHA_STUDENT_NOVATO, 'player1', 1);
-      const protectedStudent = createTestStudent(ALPHA_STUDENT_PROTEGIDO, 'player2', 1);
+      const protectedStudent = createTestStudent(ALPHA_STUDENT_PROTEGIDO, 'player2', 1, {
+        statuses: ['keyword_provocação'],
+      });
 
       state.players['player1'].board.push(attacker);
       state.players['player2'].board.push(protectedStudent);
@@ -488,10 +490,12 @@ describe('Keywords Engine — Fase 6: Validação Completa de Keywords do Alpha'
         type: ActionType.ATTACK,
         playerId: 'player1',
         attackerInstanceId: attacker.instanceId,
-        targetId: protectedStudent.instanceId,
       });
 
       expect(attackRes.success).toBe(true);
+      if (attackRes.success) {
+        expect(attackRes.state.combat.attacks[0].targetId).toBe(protectedStudent.instanceId);
+      }
     });
   });
 
@@ -651,17 +655,26 @@ describe('Keywords Engine — Fase 6: Validação Completa de Keywords do Alpha'
       const combatInf = calculateCombatInfluence(rival, atletaEnemy, ALPHA_CARDS);
       expect(combatInf).toBe(rival.currentInfluence! + 1); // 2 + 1 = 3
 
-      // Resolução no combate
+      // Resolução no combate: rival ataca Representante e atletaEnemy bloqueia (Bloqueio Livre)
       const attackRes = declareAttack(state, {
         type: ActionType.ATTACK,
         playerId: 'player1',
         attackerInstanceId: rival.instanceId,
-        targetId: atletaEnemy.instanceId,
+        targetId: 'player2',
       });
       expect(attackRes.success).toBe(true);
       if (!attackRes.success) return;
 
-      const resolveRes = resolveCombat(attackRes.state, ALPHA_CARDS);
+      const blockRes = declareBlock(attackRes.state, {
+        type: ActionType.BLOCK,
+        playerId: 'player2',
+        attackerInstanceId: rival.instanceId,
+        blockerInstanceId: atletaEnemy.instanceId,
+      });
+      expect(blockRes.success).toBe(true);
+      if (!blockRes.success) return;
+
+      const resolveRes = resolveCombat(blockRes.state, ALPHA_CARDS);
       expect(resolveRes.success).toBe(true);
       if (!resolveRes.success) return;
       // Moral do defensor deve ter caído em 3 (5 - 3 = 2)

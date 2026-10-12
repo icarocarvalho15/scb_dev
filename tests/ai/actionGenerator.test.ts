@@ -183,8 +183,8 @@ describe('AI System — ActionGenerator (src/ai/actionGenerator.ts)', () => {
         (a) => a.type === ActionType.ADVANCE_PHASE || a.type === ActionType.RESOLVE_COMBAT
       );
 
-      // Deve gerar ataque ao Representante e ao Estudante inimigo
-      expect(attackActions.length).toBe(2);
+      // Conforme Seção 29: O ataque é focado automaticamente no Representante (ou Provocador)
+      expect(attackActions.length).toBe(1);
       expect(advanceActions.length).toBeGreaterThan(0);
     });
 

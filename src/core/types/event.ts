@@ -119,6 +119,12 @@ export interface PopularityGainedEvent extends BaseGameEvent {
   highlightUnlocked: boolean;
 }
 
+export interface HighlightActivatedEvent extends BaseGameEvent {
+  type: GameEventType.HIGHLIGHT_ACTIVATED;
+  playerId: PlayerId;
+  representativeId: string;
+}
+
 export interface CardDrawnEvent extends BaseGameEvent {
   type: GameEventType.CARD_DRAWN;
   playerId: PlayerId;
@@ -198,6 +204,7 @@ export type GameEvent =
   | TurnEndedEvent
   | PhaseChangedEvent
   | PopularityGainedEvent
+  | HighlightActivatedEvent
   | CardDrawnEvent
   | CardDiscardedEvent
   | EffectAppliedEvent

@@ -1,70 +1,73 @@
 # School Card Battle (SCB) 🃏🏫
 
-![Status](https://img.shields.io/badge/Status-Alpha_Development-orange)
+![Status](https://img.shields.io/badge/Status-Alpha_Vertical_Slice-success)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)
 ![Vite](https://img.shields.io/badge/Bundler-Vite-purple)
-![Architecture](https://img.shields.io/badge/Architecture-Engine_First-success)
+![Architecture](https://img.shields.io/badge/Architecture-Engine_First-orange)
+![Tests](https://img.shields.io/badge/Tests-226_Passing-brightgreen)
 
-**School Card Battle (SCB)** é um Trading Card Game (TCG) digital competitivo com temática escolar e estética anime. O projeto está sendo construído com uma arquitetura **Engine-First** rigorosa e desenvolvido através de um fluxo de trabalho **Multi-Agente (Agentic Workflow)** utilizando o Antigravity IDE.
+**School Card Battle (SCB)** é um Trading Card Game (TCG) digital competitivo com temática escolar e estética anime. O jogo combina gerenciamento de recursos, combate tático de Estudantes e um sistema único de interrupções e magias chamado **Debate**.
 
-Cada jogador lidera uma turma escolar através de um **Representante** e utiliza **Estudantes**, **Equipamentos**, **Ambientes** e **Debates** estratégicos para reduzir a Moral do adversário a zero.
+Este projeto foi construído com uma arquitetura **Engine-First** rigorosa e desenvolvido através de um **Fluxo de Trabalho Multi-Agente (Agentic Workflow)**, onde IA e desenvolvedor humano colaboram baseados em uma documentação de Game Design e Regras (GDD) estrita e imutável.
 
 ---
 
-## 🚀 Estado Atual do Projeto: Alpha (Motor de Regras)
+## 🚀 Estado Atual: Alpha Jogável (Fase 11 - Vertical Slice)
 
-Atualmente, o projeto foca na construção do núcleo determinístico do jogo (Game Engine) de forma totalmente independente da Interface de Usuário (UI). O motor é puro, imutável e validado por testes automatizados estruturados.
+O projeto atingiu seu principal marco de desenvolvimento estrutural: **Uma partida completa de ponta a ponta (Humano vs IA) diretamente no navegador.** 
 
-### 🎯 Fases Concluídas (Core Engine)
+O motor de regras (`Game Engine`) é 100% puro e isolado da Interface de Usuário (`UI`). A IA e o jogador humano operam sob as mesmas restrições, validando ações através do mesmo despachador central (`applyAction`).
 
-- [x] **Fase 1: Fundação** — `GameState` imutável, sistema de ações e validações puras.
-- [x] **Fase 2: Turnos e Recursos** — Ciclo de turnos (Start, Main, Debate, Combat, End), progressão de Energia (escala até 10) e limites de mão.
-- [x] **Fase 3: Cartas e Campo** — Validação de custos, zonas de jogo (`HAND`, `BOARD`, `ENVIRONMENT`), limite rígido de 6 Estudantes e regra de **Substituição**.
-- [x] **Fase 4: Sistema de Combate** — Motor determinístico de declaração de ataques e bloqueios livres, cálculo de dano simultâneo (Influência vs Moral) e integração de Keywords táticas (*Diplomacia, Inércia, Impulso, Provocação, Guarda e Infiltração*).
-- [x] **Fase 5 e 6: Eventos e Efeitos** — Infraestrutura reativa para desencadeamento de habilidades passivas e ativadas baseadas em dados (Data-Driven).
-- [x] **Fase 7: Representantes & Sistema de Debate** — Implementação do sistema de progressão (Popularidade e Destaque) e o motor de interação de feitiços/habilidades (Debate Phase), resolvido em **Pilha Reversa (LIFO)** através de Ação Inicial, Réplica, Tréplica e Contrarréplica.
+### 🎯 Fases Concluídas (Roadmap)
+
+- [x] **Fase 0 & 1: Fundação** — Arquitetura de tipos, `GameState` imutável e gerador de estado inicial.
+- [x] **Fase 2: Turnos e Energia** — Ciclo automático de 5 fases (`START`, `MAIN`, `DEBATE`, `COMBAT`, `END`), escalonamento determinístico de Energia (1 a 10) e limites de mão.
+- [x] **Fase 3: Cartas e Campo** — Validação de custos, alocação no `BOARD` (limite de 6 Estudantes) com regra oficial de **Substituição**, e `ENVIRONMENT` (1 Ambiente ativo).
+- [x] **Fase 4: Sistema de Combate** — Combate tático onde o **alvo é sempre o Representante adversário** (exceto sob *Provocação*). O defensor possui controle total via **Bloqueio Livre**. Resolução de dano simultâneo (Influência vs Moral).
+- [x] **Fase 5 & 6: Eventos, Efeitos e Keywords** — Infraestrutura reativa (Event Bus) e Keywords orientadas a dados: *Inércia (temporária), Impulso, Provocação, Guarda, Infiltração, Diplomacia (Turno 1), Persistência, Silêncio, Inspiração, etc.*
+- [x] **Fase 7: Representantes** — Sistema de **Popularidade** reativa e ativação de **Destaque** (habilidade ultimate que custa apenas Popularidade, sem gasto de Energia).
+- [x] **Fase 8: Sistema de Debate** — Motor de interrupção mágica resolvido em **Pilha Reversa LIFO** de 4 níveis (Ação Inicial, Réplica, Tréplica, Contrarréplica) com invalidação parcial de alvos (fizzle).
+- [x] **Fase 9: AI System** — IA autônoma determinística. Utiliza geradores de ação, filtros de legalidade e heurísticas de decisão integradas diretamente ao core, sem trapaças de estado.
+- [x] **Fase 10: UI System** — Interface web em **React**, responsiva, com estética *Glassmorphism/Anime*. Tabuleiro completo, *CardComponents* dinâmicos, modais de substituição/descarte e visualização de conexões de combate em tempo real.
+- [x] **Fase 11: Vertical Slice** — Integração ponta a ponta, resolução de *soft-locks* em transições de turno assíncronas, automatização fluida da `Start Phase` e homologação E2E.
 
 ---
 
 ## 🏗️ Arquitetura e Princípios de Design
 
-O SCB adota padrões rígidos de engenharia de software para garantir escalabilidade para o futuro multiplayer e estabilidade para a IA:
+O SCB adota padrões rígidos de engenharia de software para garantir estabilidade, zero trapaças e escalabilidade para um futuro modo Multiplayer com servidor autoritativo:
 
-*   **Engine-First & UI Agnostic:** O React (UI) apenas despacha "Intenções de Ação" (Actions) e renderiza o `GameState`. A interface não toma decisões sobre regras, custos ou validação de alvos.
-*   **Imutabilidade Estrita:** Todo o motor de regras processa as ações através de funções puras (`applyAction(state, action) => newState`).
-*   **Data-Driven Design:** Cartas não possuem lógicas hardcoded. Elas são definidas por dados (`CardDefinition`) e instanciadas dinamicamente (`CardInstance`), separando características permanentes de estados mutáveis durante a partida.
-*   **Determinismo:** Para facilitar simulações, IA e futuros replays, todo evento gerado na partida é reproduzível a partir de um estado inicial e uma sequência de ações.
+1.  **Engine-First & UI Agnostic:** O frontend (React) funciona apenas como uma camada de visualização (*View Layer*). Toda lógica, permissão de jogada, bloqueio ou combate ocorre estritamente dentro da Engine TypeScript isolada.
+2.  **Imutabilidade Estrita:** Nenhuma função altera o estado global. As ações geram um novo `GameState` através do despachador central de validações.
+3.  **Data-Driven Design:** As cartas são registros estáticos no catálogo. Ao entrarem em jogo, viram instâncias (`CardInstance`) que rastreiam seus status dinâmicos (dano, inércia, silêncio), facilitando balanceamento em massa.
+4.  **Desenvolvimento por Agentes:** Construído de forma modular com *Orchestrator, Game Core Engineer, AI Engineer* e *UI Engineer* operando via prompts sistemáticos para garantir zero desvio das regras do `SCB_Rules.md`.
 
 ---
 
-## 🤖 Agentic Workflow (Orquestração de IA)
+## ⚔️ Mecânicas de Destaque
 
-Este projeto foi construído delegando tarefas para agentes especializados de Inteligência Artificial, seguindo rigorosos documentos normativos de design e arquitetura. O fluxo inclui:
-
-*   **Orchestrator (Tech Lead):** Analisa o GDD, regras globais e coordena o avanço das fases, validando o trabalho antes do merge.
-*   **Tech Architect & Game Core Engineer:** Responsáveis pela estrutura TypeScript, motor de despacho de ações e integridade do GameState.
-*   **Rules & Combat Engineers:** Encarregados de traduzir o Game Design Document em testes automatizados (Vitest) e implementar a lógica de turnos, custos e resolução de dano e Debates.
+*   **Bloqueio Livre (Free Block):** Diferente de jogos onde o atacante escolhe a unidade que vai bater, no SCB os ataques são focados no Representante. Cabe ao defensor a tática de usar seus Estudantes para interceptar (Bloquear) os ataques.
+*   **Debates (A Pilha):** Um sistema contido e estratégico de respostas (Ação $\rightarrow$ Réplica $\rightarrow$ Tréplica $\rightarrow$ Contrarréplica).
+*   **Representantes:** Lideram o deck, possuem vida (Moral) e acumulam *Popularidade* ao cumprir condições passivas (ex: sempre que um aliado ataca). Ao atingir o limite, liberam o *Destaque*, uma ultimate gratuita de Energia que pode virar a mesa.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 *   **Linguagem:** TypeScript (Strict Mode)
-*   **Frontend (Em breve):** React
+*   **Frontend:** React 18
 *   **Build Tool:** Vite
-*   **Testes:** Vitest (TDD aplicado ao Core Engine)
-*   **Futuro (Multiplayer):** Node.js, WebSockets, PostgreSQL
+*   **Test Runner:** Vitest (com 220+ testes unitários e de simulação passando)
+*   **Estilização:** CSS Vanilla Moderno (CSS Variables, Flexbox/Grid, Backdrop-filter)
 
 ---
 
 ## ⚙️ Como Executar o Projeto Localmente
 
-Como a engine é independente, você pode rodar e validar toda a lógica de TCG via terminal (Test Runner).
-
-1. Clone o repositório:
+1. **Clone o repositório:**
    ```bash
-   git clone [https://github.com/seu-usuario/school-card-battle.git](https://github.com/seu-usuario/school-card-battle.git)
-   cd school-card-battle
+   git clone [https://github.com/icarocarvalho15/scb_dev.git](https://github.com/icarocarvalho15/scb_dev.git)
+   cd scb_dev
    ```
 
 2. Instale as dependências:
@@ -76,17 +79,26 @@ Como a engine é independente, você pode rodar e validar toda a lógica de TCG 
    ```bash
    npm run test
    ```
+
 4. Verifique a integridade dos tipos e builde o projeto:
    ```bash
    npm run typecheck
    npm run build
    ```
+
+5. Inicie o servidor de desenvolvimento para jogar:
+   ```bash
+   npm run dev
+   ```
+   Acesse http://localhost:5173/ no seu browser para iniciar uma partida.
 ---
 
 ## 📝 Próximas Fases (Planejamento Futuro)
 
-A próxima fase do projeto é o **Frontend & Interface do Usuário (UI)**, seguido pela implementação da **Inteligência Artificial (IA)** para criar oponentes jogáveis.
+- [ ] **Fase 12 & 13: Polish & Alpha Release** — Refinamento de UX, sistema de Mulligan e congelamento definitivo da versão Alpha 1.0.
 
+---
 
-*   **Fase 8 (IA):** Desenvolvimento da lógica de decisão para os personagens controlados pelo computador, baseada na arquitetura Engine-First criada atualmente.
-*   **Fase 9 (UI):** Construção da interface visual em React para representar o campo de batalha, interagir com as cartas e visualizar os efeitos do jogo.
+Desenvolvido com Inteligência Artificial.
+
+School Card Battle &copy DravDev - 2026.

@@ -609,9 +609,11 @@ Quando a Popularidade atinge o requisito do Representante:
 
 > o Destaque fica disponível.
 
+O Destaque do Representante NÃO custa Energia. O único requisito e custo para ativar o Destaque é possuir a Popularidade exigida.
+
 O Destaque possui:
 
-* custo;
+* custo de Popularidade;
 * efeito;
 * requisitos;
 * regras próprias.
@@ -632,7 +634,7 @@ Condição de referência:
 
 Destaque:
 
-> Custo: 5 Energia.
+> Custo: 5 Popularidade.
 
 Efeito:
 
@@ -648,7 +650,7 @@ Condição de referência:
 
 Destaque:
 
-> Custo: 5 Energia.
+> Custo: 5 Popularidade.
 
 Efeito:
 

@@ -1,58 +1,51 @@
-Assuma as responsabilidades conjuntas de Debate Engineer e Rules Engineer conforme definidos em @docs/agents/SCB_Debate_Engineer.md e @docs/agents/SCB_Rules_Engineer.md.
+Assuma as responsabilidades conjuntas de QA Engineer e Integration Engineer conforme definidos em @docs/agents/SCB_QA_Engineer.md e @docs/agents/SCB_Integration_Engineer.md.
+Seu Perfil: Validação ponta a ponta, caça a bugs reativos/concorrentes no React e testes exploratórios de experiência no navegador.
 
-Missão: Fase 7 — Debate System (Sistema e Cadeia de Debates)
+Briefing Formal — Diretiva de Delegação (Fase 11: Vertical Slice)
 
-Agente Designado: Debate Engineer (@docs/agents/SCB_Debate_Engineer.md) com suporte do Rules Engineer (@docs/agents/SCB_Rules_Engineer.md).
+Fase: 11 — Vertical Slice (Homologação Alpha Local Jogável)
+Status: IN_PROGRESS
+Agente Responsável: QA & Integration Engineer
+Supervisor: Orchestrator / Tech Lead
 
-Diretiva de Delegação (Briefing Formal)
+Objetivo:
+Subir a aplicação web localmente (npm run dev), jogar partidas completas como Humano contra a IA e validar ponta a ponta a integridade de regras, sincronização reativa e ausência de soft-locks na interface.
 
-Contexto & Leitura Obrigatória:
-@docs/rules/SCB_Rules.md (Seção 22: Debates, e Seção 10: Ordem do Turno).
+Documentação Obrigatória:
+@docs/rules/SCB_PROJECT_STATUS.md — Status e escopo do Alpha.
+@docs/rules/SCB_Rules.md — Autoridade normativa do jogo (turnos, combate, debates, diplomacia).
+@docs/rules/SCB_Architecture.md — Princípio Engine First e isolamento de regras.
 
-@docs/rules/SCB_Architecture.md (Seção 5: GameState, e Seção 15: Actions e Resolução).
+Componentes e Módulos no Escopo:
+Orquestrador de UI: useGameController.ts
+Mesa e Componentes: GameBoard.tsx, CentralZone.tsx, PhaseControls.tsx
+Modais: SubstitutionModal.tsx, DiscardModal.tsx, GameOverModal.tsx
+Loop da IA: aiPlayer.ts integrado ao despachador gameEngine.ts
 
-@docs/agents/SCB_Debate_Engineer.md e @docs/agents/SKILL.md.
+Critérios de Aceite para a Homologação:
+Execução Local e Carregamento: npm run dev inicia sem avisos de runtime ou erros no console do navegador.
+O estado inicial renderiza: Jogador (Daichi) com 4 cartas e 1 de Energia; Oponente (Akira) com 4 cartas ocultas; trilha de fases destacando a fase atual.
 
-Objetivo da Missão:
-Implementar a infraestrutura determinística da Debate Phase, gerenciando a pilha de debate (Debate Stack), alternância de respostas entre jogador ativo e oponente, limite de ações e resolução estrita LIFO (Last In, First Out).
+Transições de Fase e Feedback Visual:
+O avanço pelo ciclo canônico (START $\rightarrow$ MAIN $\rightarrow$ DEBATE $\rightarrow$ COMBAT $\rightarrow$ END) sincroniza botões, trilhas de fases e toasts de feedback.
+Estados de prontidão e Inércia são refletidos visualmente nas cartas recém-jogadas.
 
-Escopo da Implementação:
-Estrutura da Cadeia de Debate:
-Ação Inicial (iniciada pelo jogador ativo na DebatePhase ou por resposta a cartas de Debate);
-Réplica (oponente responde);
-Tréplica (jogador ativo responde);
-Contrarréplica (oponente responde).
-Teto Alpha: Limite estrito de no máximo 4 ações na cadeia.
-Ação de Passar (PASS_DEBATE / Pass):
-Se um jogador optar por não responder (ou se ambos passarem consecutivamente), a pilha de debate fecha e inicia a resolução.
+Fluxo Completo Humano vs IA:
+O jogador consegue baixar cartas respeitando a Energia disponível.
+A IA responde aos turnos e fases sem violar regras e sem gerar loops infinitos.
+Resolução de combates exibe o confronto de Moral e Influência com cálculo de dano mútuo e descarte de derrotados.
+Pilha de Debate (LIFO até 4 níveis) permite responder ou passar a vez adequadamente.
+Popularidade é contabilizada e o gatilho de Destaque é desbloqueado no limiar correto.
 
-Resolução em Pilha LIFO:
-Ordem inversa de execução: Contrarréplica -> Tréplica -> Réplica -> Ação Inicial.
+Detecção e Prevenção de Soft-Locks:
+Mão Cheia: Com mais de 8 cartas na END phase, o DiscardModal.tsx obriga o descarte do excedente sem travar a interface.
+Campo Lotado: Ao tentar jogar o 7º estudante, o SubstitutionModal.tsx exige escolher um estudante para descarte ou cancelar sem travar a mão.
+Passe de Fase sob Ação Pendente: O jogo não deve permitir avançar de fase enquanto houver resoluções obrigatórias bloqueadas ou turnos da IA pendentes.
+Combate sem Bloqueadores: Possibilidade de avançar quando a IA ou o jogador optar por não declarar bloqueadores.
 
-Invalidação Parcial de Alvo (Target Invalidation):
-Conforme regra oficial, se o alvo de um efeito se tornar inválido antes da resolução (ex: unidade removida ou protegida), apenas o efeito dependente daquele alvo falha (fizzle); efeitos secundários independentes da mesma carta resolvem normalmente.
+Condição Terminal e Reinicialização:
+Reduzir a Moral do Representante a 0 dispara o GameOverModal.tsx com estado de Vitória/Derrota.
+O botão "Jogar Novamente" reinicia a partida do zero com novo seed determinístico e estado integro.
 
-Respeito a Proteção:
-Alvos com Keyword.PROTECAO não podem ser alvejados por cartas ou habilidades de debate.
-
-Restrições Arquiteturais:
-Toda a cadeia de debate deve operar de forma 100% pura na engine, sem qualquer dependência de React ou DOM.
-O estado da pilha (DebateState) deve residir explicitamente dentro de GameState.debate.
-
-Arquivos Alvo:
-src/core/engine/debateSystem.ts (novo motor da pilha de debates).
-
-src/core/engine/gameEngine.ts (integração das ações START_DEBATE, RESPOND_DEBATE, RESOLVE_DEBATE).
-
-src/core/types/ (payloads de ações e tipagem de DebateState se necessário).
-
-src/cards/alphaCards.ts (adicionar cartas de debate de exemplo para os testes).
-
-tests/core/debateSystem.test.ts (suíte completa de testes unitários).
-
-Critérios de Aceite:
-Simulação completa de cadeias de debate de 1 a 4 níveis com resolução LIFO determinística.
-Testes cobrindo: início de debate, réplica, tréplica, contrarréplica, rejeição da 5ª ação (limite atingido), passe consecutivo, invalidação parcial de alvos e respeito a cartas com Proteção.
-100% de testes verdes e npm run test, npm run typecheck e npm run build limpos.
-
-Instruções de Execução: Pense passo a passo. Implemente o código necessário focando no Princípio Engine First e na Imutabilidade Estrita. Quando terminar e os testes estiverem passando, responda estritamente com o relatório de conclusão no formato exigido.
+Instruções de Execução:
+Pense passo a passo. Implemente o código necessário focando no Princípio Engine First e na Imutabilidade Estrita. Quando terminar e os testes estiverem passando, responda estritamente com o relatório de conclusão no formato exigido.

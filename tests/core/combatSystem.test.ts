@@ -19,7 +19,6 @@ import {
   executeDirectCombat,
   ALPHA_STUDENT_NOVATO,
   ALPHA_STUDENT_ATLETA_IMPULSO,
-  ALPHA_STUDENT_MONITOR,
   ALPHA_STUDENT_REBELDE,
   ALPHA_STUDENT_PROVOCADOR,
   ALPHA_STUDENT_GUARDA,
@@ -328,7 +327,7 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
       }
     });
 
-    it('permite atacar um Estudante adversário durante o Turno 1', () => {
+    it('proíbe atacar diretamente um Estudante adversário sem Provocação (INVALID_TARGET)', () => {
       const state = createCombatReadyState();
       state.turn = 1;
       state.players['player1'].diplomacyActive = true;
@@ -346,10 +345,54 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
         targetId: target.instanceId,
       });
 
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe(ActionErrorCode.INVALID_TARGET);
+      }
+    });
+
+    it('redireciona ataque para Estudante adversário caso possua Provocação', () => {
+      const state = createCombatReadyState();
+      state.turn = 1;
+      state.players['player1'].diplomacyActive = true;
+
+      const attacker = createTestStudent(ALPHA_STUDENT_ATLETA_IMPULSO, 'player1', 1);
+      state.players['player1'].board.push(attacker);
+
+      const target = createTestStudent(ALPHA_STUDENT_PROVOCADOR, 'player2', 1);
+      state.players['player2'].board.push(target);
+
+      const result = declareAttack(state, {
+        type: ActionType.ATTACK,
+        playerId: 'player1',
+        attackerInstanceId: attacker.instanceId,
+      });
+
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.state.combat.attacks).toHaveLength(1);
         expect(result.state.combat.attacks[0].targetId).toBe(target.instanceId);
+      }
+    });
+
+    it('declaração de ataque sem targetId especificado direciona automaticamente ao Representante adversário', () => {
+      const state = createCombatReadyState();
+      state.turn = 2;
+      state.players['player1'].diplomacyActive = false;
+      state.players['player1'].turnCount = 2;
+
+      const attacker = createTestStudent(ALPHA_STUDENT_NOVATO, 'player1', 1);
+      state.players['player1'].board.push(attacker);
+
+      const result = declareAttack(state, {
+        type: ActionType.ATTACK,
+        playerId: 'player1',
+        attackerInstanceId: attacker.instanceId,
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.state.combat.attacks[0].targetId).toBe('rep_akira');
       }
     });
 
@@ -469,7 +512,7 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
       }
     });
 
-    it('permite que Estudante com INFILTRACAO ignore Provocação e ataque outro Estudante sem Provocação', () => {
+    it('Estudante com INFILTRACAO não pode escolher atacar Estudante sem Provocação (todo ataque foca o Representante)', () => {
       const state = createCombatReadyState();
       state.players['player1'].diplomacyActive = false;
 
@@ -487,9 +530,9 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
         targetId: outroEstudante.instanceId,
       });
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.state.combat.attacks[0].targetId).toBe(outroEstudante.instanceId);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.code).toBe(ActionErrorCode.INVALID_TARGET);
       }
     });
   });
@@ -508,7 +551,7 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
         type: ActionType.ATTACK,
         playerId: 'player1',
         attackerInstanceId: attacker.instanceId,
-        targetId: target.instanceId,
+        targetId: 'player2',
       });
       expect(atkRes.success).toBe(true);
       if (!atkRes.success) return;
@@ -799,8 +842,8 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
       });
       state.players['player1'].board.push(attacker);
 
-      // Alvo: 2 Influence, 4 Moral
-      const target = createTestStudent(ALPHA_STUDENT_MONITOR, 'player2', 1, {
+      // Alvo com Provocação: 2 Influence, 4 Moral
+      const target = createTestStudent(ALPHA_STUDENT_PROVOCADOR, 'player2', 1, {
         currentInfluence: 2,
         currentMorale: 4,
       });
@@ -871,8 +914,8 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
       });
       state.players['player1'].board.push(attacker);
 
-      // Alvo com 2 Moral (sofrerá 3 de dano e será derrotado)
-      const target = createTestStudent(ALPHA_STUDENT_NOVATO, 'player2', 1, {
+      // Alvo com Provocação e 2 Moral (sofrerá 3 de dano e será derrotado)
+      const target = createTestStudent(ALPHA_STUDENT_PROVOCADOR, 'player2', 1, {
         currentInfluence: 1,
         currentMorale: 2,
       });
@@ -1127,7 +1170,7 @@ describe('Core Engine — Combat System (combatSystem.ts & gameEngine.ts)', () =
 
       state.combat.attacks.push({
         attackerInstanceId: attacker.instanceId,
-        targetId: target.instanceId,
+        targetId: 'player2',
       });
 
       const val = validateBlock(state, {

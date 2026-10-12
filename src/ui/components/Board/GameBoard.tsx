@@ -16,13 +16,13 @@ export const GameBoard: React.FC = () => {
     gameState,
     cardRegistry,
     isAiThinking,
+    expectedActor,
     selectionMode,
     selectedAttackerId,
     selectedBlockAttackIndex,
     inspectedCard,
     setInspectedCard,
     isSubstitutionModalOpen,
-    setIsSubstitutionModalOpen,
     isDiscardModalOpen,
     setIsDiscardModalOpen,
     selectedDiscardCardIds,
@@ -38,6 +38,7 @@ export const GameBoard: React.FC = () => {
     handleOpponentRepresentativeClick,
     handleAttackSelectForBlock,
     handleConfirmSubstitution,
+    handleCancelSubstitution,
     handleConfirmDiscard,
     handleActivateHighlight,
     handleAdvancePhase,
@@ -68,11 +69,6 @@ export const GameBoard: React.FC = () => {
         </div>
 
         <div className="scb-status-banner">
-          {selectionMode === 'SELECTING_ATTACK_TARGET' && (
-            <div className="scb-banner-action-hint scb-hint-attack">
-              ⚔ Selecione um alvo para o ataque de {player1.board.find(s => s.instanceId === selectedAttackerId)?.definitionId}
-            </div>
-          )}
           {selectionMode === 'SELECTING_BLOCK_DEFENDER' && (
             <div className="scb-banner-action-hint scb-hint-defense">
               🛡 Selecione um Estudante seu para bloquear o ataque
@@ -115,10 +111,12 @@ export const GameBoard: React.FC = () => {
           cardRegistry={cardRegistry}
           isAiThinking={isAiThinking}
           activePlayerId={gameState.activePlayerId}
+          expectedActor={expectedActor}
           selectedBlockAttackIndex={selectedBlockAttackIndex}
+          players={gameState.players}
           onSelectAttackForBlock={handleAttackSelectForBlock}
           onInspectCard={(def) => setInspectedCard(def)}
-          onPassDebate={gameState.debate.active && gameState.activePlayerId === 'player1' ? handleAdvancePhase : undefined}
+          onPassDebate={gameState.debate.active && expectedActor === 'player1' ? handleAdvancePhase : undefined}
         />
 
         {/* Área do Jogador Humano */}
@@ -142,6 +140,9 @@ export const GameBoard: React.FC = () => {
           turn={gameState.turn}
           activePlayerId={gameState.activePlayerId}
           isAiThinking={isAiThinking}
+          expectedActor={expectedActor}
+          attacksCount={gameState.combat?.attacks?.length ?? 0}
+          hasReadyAttacker={player1.board.some((s) => s.ready && !gameState.combat?.attacks?.some((a) => a.attackerInstanceId === s.instanceId))}
           player={player1}
           debateActive={gameState.debate.active}
           selectionMode={selectionMode}
@@ -163,7 +164,7 @@ export const GameBoard: React.FC = () => {
         boardStudents={player1.board}
         cardRegistry={cardRegistry}
         onConfirm={handleConfirmSubstitution}
-        onCancel={() => setIsSubstitutionModalOpen(false)}
+        onCancel={handleCancelSubstitution}
       />
 
       <DiscardModal

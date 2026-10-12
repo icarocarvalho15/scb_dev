@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GameState, GameStatus } from '../../core/types/state';
 import { GameAction, ActionType } from '../../core/types/action';
-import { CardInstance, CardDefinition, CardType } from '../../core/types/card';
+import { CardInstance, CardDefinition, CardType, Keyword } from '../../core/types/card';
 import { GamePhase } from '../../core/types/phase';
 import { applyAction, validateAction } from '../../core/engine/gameEngine';
+import { hasCardKeyword } from '../../core/engine/keywordSystem';
 import { getExpectedActor, chooseAction } from '../../ai/aiPlayer';
 import { createInitialGameState } from '../../core/state/createInitialGameState';
 import {
@@ -23,9 +24,9 @@ export function useGameController() {
     [playerDeck, aiDeck]
   );
 
-  // Estado canônico do jogo
-  const [gameState, setGameState] = useState<GameState>(() =>
-    createInitialGameState({
+  // Estado canônico do jogo (iniciado com Start Phase processada automaticamente)
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const initial = createInitialGameState({
       matchId: `alpha_${Date.now()}`,
       rngSeed: Math.floor(Math.random() * 100000),
       shuffleDeck: true,
@@ -42,8 +43,17 @@ export function useGameController() {
         isAI: true,
         deck: aiDeck,
       },
-    })
-  );
+    });
+    const startRes = applyAction(
+      initial,
+      {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: initial.activePlayerId,
+      },
+      { cardRegistry }
+    );
+    return startRes.success ? startRes.state : initial;
+  });
 
   // Estados de Interação da UI
   const [isAiThinking, setIsAiThinking] = useState(false);
@@ -71,8 +81,10 @@ export function useGameController() {
   ]);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
-  // Referência para evitar execução simultânea da IA
-  const aiExecutionRef = useRef(false);
+  // Referência / Mutex para evitar execução simultânea da IA ou condições de corrida
+  const isProcessingAI = useRef(false);
+  const gameStateRef = useRef<GameState>(gameState);
+  gameStateRef.current = gameState;
 
   // Helper para adicionar toasts
   const addToast = useCallback((message: string, type: ToastNotification['type'] = 'info') => {
@@ -94,7 +106,7 @@ export function useGameController() {
       setLogs((prev) => [
         {
           id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          turn: gameState.turn,
+          turn: gameStateRef.current.turn,
           actor,
           message,
           action,
@@ -103,45 +115,77 @@ export function useGameController() {
         ...prev.slice(0, 49),
       ]);
     },
-    [gameState.turn]
+    []
   );
 
   // Execução pura de ações via GameEngine
   const dispatchAction = useCallback(
     (action: GameAction, actor: LogEntry['actor'] = 'player'): boolean => {
-      if (gameState.status === GameStatus.FINISHED) {
-        addToast('A partida já foi encerrada.', 'warning');
+      const currentState = gameStateRef.current;
+      if (currentState.status === GameStatus.FINISHED) {
+        if (actor === 'player') {
+          addToast('A partida já foi encerrada.', 'warning');
+        }
         return false;
       }
 
       // Validação Engine First
-      const validation = validateAction(gameState, action, { cardRegistry });
+      const validation = validateAction(currentState, action, { cardRegistry });
       if (!validation.valid) {
-        addToast(validation.error?.message || 'Ação inválida pelas regras.', 'error');
+        if (actor === 'player') {
+          addToast(validation.error?.message || 'Ação inválida pelas regras.', 'error');
+        }
         return false;
       }
 
-      const result = applyAction(gameState, action, { cardRegistry });
+      const result = applyAction(currentState, action, { cardRegistry });
       if (!result.success) {
-        addToast(result.error?.message || 'Erro ao aplicar ação.', 'error');
+        if (actor === 'player') {
+          addToast(result.error?.message || 'Erro ao aplicar ação.', 'error');
+        }
         return false;
       }
 
-      setGameState(result.state);
+      let nextState = result.state;
+
+      // Auto Start Phase: Se a ação resultou em START phase (ex: virada de turno em END phase),
+      // processa imediatamente a Start Phase no motor para que o novo jogador ativo
+      // já inicie com energia escalada, carta comprada e estado estabilizado em MAIN phase.
+      if (nextState.phase === GamePhase.START && nextState.status !== GameStatus.FINISHED) {
+        const startResult = applyAction(
+          nextState,
+          {
+            type: ActionType.ADVANCE_PHASE,
+            playerId: nextState.activePlayerId,
+          },
+          { cardRegistry }
+        );
+        if (startResult.success) {
+          nextState = startResult.state;
+          const activeName = nextState.activePlayerId === 'player1' ? 'Jogador' : 'IA';
+          addLog(
+            `Início do Turno ${nextState.turn} processado automaticamente para ${activeName} (Energia atualizada e compra realizada).`,
+            'engine'
+          );
+        }
+      }
+
+      gameStateRef.current = nextState;
+      setGameState(nextState);
 
       // Gerar descrição legível para o Battle Log
       let logDesc = `Ação executada: ${action.type}`;
       if (action.type === ActionType.PLAY_CARD) {
-        const cardDef = cardRegistry[gameState.players[action.playerId]?.hand.find(c => c.instanceId === action.cardInstanceId)?.definitionId || ''];
+        const cardDef = cardRegistry[currentState.players[action.playerId]?.hand.find(c => c.instanceId === action.cardInstanceId)?.definitionId || ''];
         logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} jogou ${cardDef?.name || 'carta'}`;
       } else if (action.type === ActionType.ATTACK) {
-        const attackerDef = cardRegistry[gameState.players[action.playerId]?.board.find(c => c.instanceId === action.attackerInstanceId)?.definitionId || ''];
-        const isTargetRep = action.targetId.includes('rep') || action.targetId === 'player1' || action.targetId === 'player2';
-        logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} atacou ${isTargetRep ? 'o Representante' : 'um Estudante'} com ${attackerDef?.name || 'Estudante'}`;
+        const attackerDef = cardRegistry[currentState.players[action.playerId]?.board.find(c => c.instanceId === action.attackerInstanceId)?.definitionId || ''];
+        const isTargetRep = !action.targetId || action.targetId.includes('rep') || action.targetId === 'player1' || action.targetId === 'player2';
+        logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} atacou ${isTargetRep ? 'o Representante' : 'um Estudante (Provocação)'} com ${attackerDef?.name || 'Estudante'}`;
       } else if (action.type === ActionType.BLOCK) {
         logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} declarou bloqueio`;
       } else if (action.type === ActionType.ADVANCE_PHASE) {
-        logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} avançou a fase (${result.state.phase})`;
+        logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} avançou a fase (${nextState.phase})`;
       } else if (action.type === ActionType.START_DEBATE) {
         logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} iniciou um Debate`;
       } else if (action.type === ActionType.RESPOND_DEBATE) {
@@ -150,64 +194,200 @@ export function useGameController() {
         logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} passou a vez no Debate`;
       } else if (action.type === ActionType.RESOLVE_DEBATE) {
         logDesc = `Debate resolvido na mesa`;
+      } else if (action.type === ActionType.ACTIVATE_HIGHLIGHT) {
+        logDesc = `${action.playerId === 'player1' ? 'Jogador' : 'IA'} ativou a habilidade de Destaque!`;
       }
 
       addLog(logDesc, actor, action);
       return true;
     },
-    [gameState, cardRegistry, addToast, addLog]
+    [cardRegistry, addToast, addLog]
   );
 
   // =========================================================================
-  // LOOP AUTÔNOMO DA IA
+  // FALLBACK ROBUSTO DA IA (Previne Soft-Locks e Promessas Travadas)
+  // =========================================================================
+  const handleAiFallback = useCallback(
+    (currentState: GameState) => {
+      try {
+        if (currentState.status === GameStatus.FINISHED) return;
+
+        // Se a IA for o defensor em COMBAT e não puder ou não quiser bloquear
+        if (currentState.phase === GamePhase.COMBAT && currentState.activePlayerId === 'player1') {
+          addLog('IA optou por não declarar mais bloqueadores.', 'ai');
+          dispatchAction({ type: ActionType.ADVANCE_PHASE, playerId: 'player1' }, 'player');
+          return;
+        }
+
+        // Se for debate ativo e a IA não tem réplica, ela passa no debate
+        if (currentState.phase === GamePhase.DEBATE && currentState.debate.active) {
+          addLog('IA passou a réplica no Debate.', 'ai');
+          dispatchAction({ type: ActionType.PASS_DEBATE, playerId: 'player2' }, 'ai');
+          return;
+        }
+
+        // Se a IA for o jogador ativo, ela avança a fase canônica
+        if (currentState.activePlayerId === 'player2') {
+          // Se estiver em COMBAT e possuir ataques declarados sem Infiltração:
+          if (currentState.phase === GamePhase.COMBAT) {
+            const attacks = currentState.combat?.attacks ?? [];
+            const hasBlockableAttack = attacks.some((a) => {
+              const attacker = currentState.players.player2.board.find((s) => s.instanceId === a.attackerInstanceId);
+              return attacker ? !hasCardKeyword(attacker, Keyword.INFILTRACAO, cardRegistry) : true;
+            });
+
+            // Se há ataque bloqueável e o defensor humano ainda não concluiu a defesa, transfere prioridade para ele
+            if (attacks.length > 0 && hasBlockableAttack && !currentState.combat?.defenderPassed) {
+              const nextState: GameState = {
+                ...currentState,
+                combat: {
+                  ...currentState.combat,
+                  attackersDeclared: true,
+                },
+              };
+              gameStateRef.current = nextState;
+              setGameState(nextState);
+              addLog('IA concluiu a declaração de ataques. Sua vez de declarar Bloqueio Livre!', 'ai');
+              return;
+            }
+          }
+
+          let discardIds: string[] | undefined;
+          if (currentState.phase === GamePhase.END) {
+            const aiHand = currentState.players.player2.hand;
+            if (aiHand.length > 8) {
+              discardIds = aiHand.slice(0, aiHand.length - 8).map((c) => c.instanceId);
+            }
+          }
+
+          dispatchAction(
+            {
+              type: ActionType.ADVANCE_PHASE,
+              playerId: 'player2',
+              cardInstanceIdsToDiscard: discardIds,
+            },
+            'ai'
+          );
+          return;
+        }
+      } catch (fallbackError) {
+        console.error('Falha no fallback da IA:', fallbackError);
+      }
+    },
+    [addLog, dispatchAction]
+  );
+
+  // =========================================================================
+  // LOOP AUTÔNOMO DA IA (Com Mutex, Estabilização e Fallback Robusto)
   // =========================================================================
   useEffect(() => {
+    // 1. Partida finalizada
     if (gameState.status === GameStatus.FINISHED) {
+      setIsAiThinking(false);
+      isProcessingAI.current = false;
+      return;
+    }
+
+    // 2. Estado não estabilizado: START phase é fase transitória interna da engine
+    // (A IA só inicia suas decisões após a fase estabilizar em MAIN ou posterior)
+    if (gameState.phase === GamePhase.START) {
       setIsAiThinking(false);
       return;
     }
 
+    // 3. Confirmar se a prioridade pertence de fato à IA ('player2')
     const expectedActor = getExpectedActor(gameState);
     if (expectedActor !== 'player2') {
       setIsAiThinking(false);
-      aiExecutionRef.current = false;
+      isProcessingAI.current = false;
       return;
     }
 
-    if (aiExecutionRef.current) return;
-    aiExecutionRef.current = true;
+    // 4. Mutex: impedir que múltiplos renders disparem o processamento simultaneamente
+    if (isProcessingAI.current) {
+      return;
+    }
+    isProcessingAI.current = true;
     setIsAiThinking(true);
 
     const timer = setTimeout(() => {
-      aiExecutionRef.current = false;
-      const currentActor = getExpectedActor(gameState);
-      if (currentActor !== 'player2' || gameState.status === GameStatus.FINISHED) {
-        setIsAiThinking(false);
-        return;
-      }
+      try {
+        const currentState = gameStateRef.current;
 
-      const aiAction = chooseAction(gameState, 'player2', {
-        cardRegistry,
-        rngSeed: gameState.rngSeed + Date.now(),
-      });
-
-      if (aiAction) {
-        dispatchAction(aiAction, 'ai');
-      } else {
-        // Se a IA for o defensor em COMBAT e não quer bloquear, o atacante humano avança
-        if (gameState.phase === GamePhase.COMBAT && gameState.activePlayerId === 'player1') {
-          // IA optou por não bloquear mais
-          addLog('IA optou por não declarar mais bloqueadores.', 'ai');
-          dispatchAction({ type: ActionType.ADVANCE_PHASE, playerId: 'player1' }, 'player');
-        } else if (gameState.activePlayerId === 'player2') {
-          // Se a IA for o jogador ativo e não tiver ações, ela avança a fase
-          dispatchAction({ type: ActionType.ADVANCE_PHASE, playerId: 'player2' }, 'ai');
+        // Re-validações de segurança com o estado mais atualizado
+        if (
+          currentState.status === GameStatus.FINISHED ||
+          currentState.phase === GamePhase.START ||
+          getExpectedActor(currentState) !== 'player2'
+        ) {
+          setIsAiThinking(false);
+          isProcessingAI.current = false;
+          return;
         }
+
+        let aiAction: GameAction | null = null;
+        try {
+          aiAction = chooseAction(currentState, 'player2', {
+            cardRegistry,
+            rngSeed: currentState.rngSeed + Date.now(),
+          });
+        } catch (evalErr) {
+          console.error('Erro na avaliação heurística da IA:', evalErr);
+          aiAction = null;
+        }
+
+        if (aiAction) {
+          const success = dispatchAction(aiAction, 'ai');
+          if (!success) {
+            console.warn('Ação sugerida pela IA rejeitada pela engine. Acionando fallback.');
+            handleAiFallback(currentState);
+          }
+        } else {
+          // IA não tem ação legal vantajosa: aciona fallback de avanço sem travar
+          handleAiFallback(currentState);
+        }
+      } catch (loopError) {
+        console.error('Exceção no ciclo assíncrono da IA:', loopError);
+        handleAiFallback(gameStateRef.current);
+      } finally {
+        isProcessingAI.current = false;
+        setIsAiThinking(false);
       }
     }, 700);
 
-    return () => clearTimeout(timer);
-  }, [gameState, cardRegistry, dispatchAction, addLog]);
+    // CRUCIAL: Cleanup do timer e liberação do mutex para prevenir travamento se o efeito for reciclado
+    return () => {
+      clearTimeout(timer);
+      isProcessingAI.current = false;
+    };
+  }, [gameState, cardRegistry, dispatchAction, handleAiFallback]);
+
+  // =========================================================================
+  // PROCESSAMENTO AUTOMÁTICO DA START PHASE (Safety Net Reativo)
+  // =========================================================================
+  useEffect(() => {
+    if (gameState.status === GameStatus.FINISHED) return;
+    if (gameState.phase === GamePhase.START) {
+      const activePlayerId = gameState.activePlayerId;
+      const result = applyAction(
+        gameState,
+        {
+          type: ActionType.ADVANCE_PHASE,
+          playerId: activePlayerId,
+        },
+        { cardRegistry }
+      );
+      if (result.success) {
+        gameStateRef.current = result.state;
+        setGameState(result.state);
+        const activeName = activePlayerId === 'player1' ? 'Jogador' : 'IA';
+        addLog(
+          `Início do Turno ${result.state.turn} processado automaticamente para ${activeName} (Energia atualizada e compra realizada).`,
+          'engine'
+        );
+      }
+    }
+  }, [gameState.phase, gameState.turn, cardRegistry, addLog]);
 
   // =========================================================================
   // ENGINE FIRST: CONSULTAS DECLARATIVAS DE VALIDADE
@@ -293,35 +473,16 @@ export function useGameController() {
       if (gameState.phase !== GamePhase.COMBAT) return false;
       if (gameState.activePlayerId !== 'player1') return false;
 
-      // Verifica se existe pelo menos um alvo legal consultando a engine
-      const opponentRepTargetId = gameState.players.player2.representative.definitionId;
-      const testRep = validateAction(
+      const test = validateAction(
         gameState,
         {
           type: ActionType.ATTACK,
           playerId: 'player1',
           attackerInstanceId: studentInstanceId,
-          targetId: opponentRepTargetId,
         },
         { cardRegistry }
       );
-      if (testRep.valid) return true;
-
-      for (const oppStudent of gameState.players.player2.board) {
-        const testStudent = validateAction(
-          gameState,
-          {
-            type: ActionType.ATTACK,
-            playerId: 'player1',
-            attackerInstanceId: studentInstanceId,
-            targetId: oppStudent.instanceId,
-          },
-          { cardRegistry }
-        );
-        if (testStudent.valid) return true;
-      }
-
-      return false;
+      return test.valid;
     },
     [gameState, cardRegistry]
   );
@@ -330,21 +491,11 @@ export function useGameController() {
    * Consulta a engine se um alvo é válido para o atacante atualmente selecionado
    */
   const isTargetValidForAttacker = useCallback(
-    (targetId: string): boolean => {
-      if (!selectedAttackerId) return false;
-      const test = validateAction(
-        gameState,
-        {
-          type: ActionType.ATTACK,
-          playerId: 'player1',
-          attackerInstanceId: selectedAttackerId,
-          targetId,
-        },
-        { cardRegistry }
-      );
-      return test.valid;
+    (_targetId: string): boolean => {
+      // Conforme Seção 29 de SCB_Rules.md: o atacante não seleciona alvos
+      return false;
     },
-    [gameState, selectedAttackerId, cardRegistry]
+    []
   );
 
   /**
@@ -471,16 +622,21 @@ export function useGameController() {
 
       // Se estivermos em COMBAT e formos o atacante ativo
       if (gameState.phase === GamePhase.COMBAT && gameState.activePlayerId === 'player1') {
-        if (selectedAttackerId === student.instanceId) {
-          // Deseleciona
-          setSelectedAttackerId(null);
-          setSelectionMode('NONE');
-        } else if (canAttackWith(student.instanceId)) {
-          setSelectedAttackerId(student.instanceId);
-          setSelectionMode('SELECTING_ATTACK_TARGET');
-          addToast('Selecione o alvo do ataque (Representante ou Estudante inimigo).', 'info');
+        if (canAttackWith(student.instanceId)) {
+          const success = dispatchAction({
+            type: ActionType.ATTACK,
+            playerId: 'player1',
+            attackerInstanceId: student.instanceId,
+          });
+          if (success) {
+            const def = cardRegistry[student.definitionId];
+            addToast(`Ataque declarado com ${def?.name || 'Estudante'}!`, 'info');
+          }
         } else {
-          addToast('Este Estudante não pode atacar agora (Inércia ou já atacou).', 'warning');
+          addToast(
+            'Este Estudante não pode atacar agora (Inércia, já atacou ou Diplomacia ativa no T1).',
+            'warning'
+          );
         }
         return;
       }
@@ -523,23 +679,6 @@ export function useGameController() {
    */
   const handleOpponentStudentClick = useCallback(
     (student: CardInstance) => {
-      // Se estamos selecionando alvo de ataque
-      if (selectionMode === 'SELECTING_ATTACK_TARGET' && selectedAttackerId) {
-        if (isTargetValidForAttacker(student.instanceId)) {
-          dispatchAction({
-            type: ActionType.ATTACK,
-            playerId: 'player1',
-            attackerInstanceId: selectedAttackerId,
-            targetId: student.instanceId,
-          });
-          setSelectedAttackerId(null);
-          setSelectionMode('NONE');
-        } else {
-          addToast('Alvo inválido para este ataque (verifique Provocação).', 'error');
-        }
-        return;
-      }
-
       // Se estamos selecionando alvo para um debate
       if (selectionMode === 'SELECTING_DEBATE_TARGET' && selectedHandCardId) {
         const action: GameAction = !gameState.debate.active
@@ -562,45 +701,18 @@ export function useGameController() {
     },
     [
       selectionMode,
-      selectedAttackerId,
-      isTargetValidForAttacker,
       selectedHandCardId,
       gameState.debate.active,
       dispatchAction,
-      addToast,
     ]
   );
 
   /**
-   * Clique no Representante Oponente (alvo de ataque)
+   * Clique no Representante Oponente
    */
   const handleOpponentRepresentativeClick = useCallback(() => {
-    if (selectionMode === 'SELECTING_ATTACK_TARGET' && selectedAttackerId) {
-      const repTargetId = gameState.players.player2.representative.definitionId;
-      if (isTargetValidForAttacker(repTargetId)) {
-        dispatchAction({
-          type: ActionType.ATTACK,
-          playerId: 'player1',
-          attackerInstanceId: selectedAttackerId,
-          targetId: repTargetId,
-        });
-        setSelectedAttackerId(null);
-        setSelectionMode('NONE');
-      } else {
-        addToast(
-          'Não é possível atacar o Representante (Diplomacia ativa ou Estudante com Provocação em campo).',
-          'error'
-        );
-      }
-    }
-  }, [
-    selectionMode,
-    selectedAttackerId,
-    gameState.players.player2.representative.definitionId,
-    isTargetValidForAttacker,
-    dispatchAction,
-    addToast,
-  ]);
+    // Alvo de ataque é automático, não requer clique
+  }, []);
 
   /**
    * Clique em um ataque na área de combate para selecionar defensor
@@ -632,6 +744,24 @@ export function useGameController() {
   }, [gameState, dispatchAction, addToast]);
 
   /**
+   * Cancelar seleção corrente
+   */
+  const cancelSelection = useCallback(() => {
+    setSelectionMode('NONE');
+    setSelectedAttackerId(null);
+    setSelectedHandCardId(null);
+    setSelectedBlockAttackIndex(null);
+  }, []);
+
+  /**
+   * Cancelar Substituição de Estudante
+   */
+  const handleCancelSubstitution = useCallback(() => {
+    setIsSubstitutionModalOpen(false);
+    setPendingSubstitutionCardId(null);
+  }, []);
+
+  /**
    * Passar ou Avançar Fase / Turno
    */
   const handleAdvancePhase = useCallback(() => {
@@ -639,6 +769,8 @@ export function useGameController() {
       addToast('Aguarde sua vez de agir.', 'warning');
       return;
     }
+
+    cancelSelection();
 
     // Se estiver na fase de debate e um debate estiver ativo
     if (gameState.phase === GamePhase.DEBATE && gameState.debate.active) {
@@ -652,11 +784,42 @@ export function useGameController() {
     // Se estiver defendendo em COMBAT e optar por não bloquear
     if (gameState.phase === GamePhase.COMBAT && gameState.activePlayerId === 'player2') {
       // Informa que não bloqueará e a IA avança o combate
-      dispatchAction({
-        type: ActionType.ADVANCE_PHASE,
-        playerId: 'player2',
-      }, 'ai');
+      dispatchAction(
+        {
+          type: ActionType.ADVANCE_PHASE,
+          playerId: 'player2',
+        },
+        'ai'
+      );
       return;
+    }
+
+    // Se o jogador humano estiver atacando em COMBAT e optar por concluir ataques
+    if (gameState.phase === GamePhase.COMBAT && gameState.activePlayerId === 'player1') {
+      const attacks = gameState.combat?.attacks ?? [];
+      const hasBlockableAttack = attacks.some((a) => {
+        const attacker = gameState.players.player1.board.find((s) => s.instanceId === a.attackerInstanceId);
+        return attacker ? !hasCardKeyword(attacker, Keyword.INFILTRACAO, cardRegistry) : true;
+      });
+
+      // Se há ataques declarados e o defensor ainda não passou:
+      // O jogador encerra a etapa de declaração de ataques e transfere a prioridade para o bloqueio da IA
+      if (attacks.length > 0 && hasBlockableAttack && !gameState.combat?.defenderPassed) {
+        const nextState: GameState = {
+          ...gameState,
+          combat: {
+            ...gameState.combat,
+            attackersDeclared: true,
+          },
+        };
+        gameStateRef.current = nextState;
+        setGameState(nextState);
+        addLog(
+          'Jogador concluiu a declaração de ataques. Aguardando declaração de bloqueios da IA...',
+          'player'
+        );
+        return;
+      }
     }
 
     // Se estiver na End Phase e a mão exceder 8 cartas: abrir modal de descarte
@@ -670,7 +833,7 @@ export function useGameController() {
       type: ActionType.ADVANCE_PHASE,
       playerId: 'player1',
     });
-  }, [gameState, dispatchAction, addToast]);
+  }, [gameState, dispatchAction, addToast, cancelSelection, addLog]);
 
   /**
    * Confirmar descarte da End Phase
@@ -692,23 +855,14 @@ export function useGameController() {
   }, [gameState, selectedDiscardCardIds, dispatchAction, addToast]);
 
   /**
-   * Cancelar seleção corrente
-   */
-  const cancelSelection = useCallback(() => {
-    setSelectionMode('NONE');
-    setSelectedAttackerId(null);
-    setSelectedHandCardId(null);
-    setSelectedBlockAttackIndex(null);
-  }, []);
-
-  /**
    * Reiniciar partida (Novo Jogo)
    */
   const handleRestartMatch = useCallback(() => {
     const freshPlayerDeck = createDaichiPlayerDeck();
     const freshAiDeck = createAkiraAIDeck();
+    const freshRegistry = buildMatchRegistry(freshPlayerDeck, freshAiDeck);
 
-    const newGame = createInitialGameState({
+    const initial = createInitialGameState({
       matchId: `alpha_${Date.now()}`,
       rngSeed: Math.floor(Math.random() * 100000),
       shuffleDeck: true,
@@ -727,6 +881,19 @@ export function useGameController() {
       },
     });
 
+    const startRes = applyAction(
+      initial,
+      {
+        type: ActionType.ADVANCE_PHASE,
+        playerId: initial.activePlayerId,
+      },
+      { cardRegistry: freshRegistry }
+    );
+    const newGame = startRes.success ? startRes.state : initial;
+
+    gameStateRef.current = newGame;
+    isProcessingAI.current = false;
+    setIsAiThinking(false);
     setGameState(newGame);
     setSelectionMode('NONE');
     setSelectedAttackerId(null);
@@ -746,10 +913,13 @@ export function useGameController() {
     addToast('Nova partida iniciada!', 'success');
   }, [addToast]);
 
+  const expectedActor = getExpectedActor(gameState);
+
   return {
     gameState,
     cardRegistry,
-    isAiThinking,
+    isAiThinking: isAiThinking && expectedActor === 'player2',
+    expectedActor,
     selectionMode,
     selectedHandCardId,
     selectedAttackerId,
@@ -775,6 +945,7 @@ export function useGameController() {
     handleOpponentRepresentativeClick,
     handleAttackSelectForBlock,
     handleConfirmSubstitution,
+    handleCancelSubstitution,
     handleConfirmDiscard,
     handleActivateHighlight,
     handleAdvancePhase,

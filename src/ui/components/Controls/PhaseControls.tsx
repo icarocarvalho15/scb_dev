@@ -7,6 +7,9 @@ export interface PhaseControlsProps {
   turn: number;
   activePlayerId: string;
   isAiThinking: boolean;
+  expectedActor?: string | null;
+  attacksCount?: number;
+  hasReadyAttacker?: boolean;
   player: PlayerState;
   debateActive: boolean;
   selectionMode: string;
@@ -29,6 +32,9 @@ export const PhaseControls: React.FC<PhaseControlsProps> = ({
   turn,
   activePlayerId,
   isAiThinking,
+  expectedActor,
+  attacksCount,
+  hasReadyAttacker,
   player,
   debateActive,
   selectionMode,
@@ -38,13 +44,14 @@ export const PhaseControls: React.FC<PhaseControlsProps> = ({
   onRestartMatch,
 }) => {
   const isPlayerTurn = activePlayerId === 'player1';
+  const isPlayerExpected = expectedActor === 'player1';
 
   // Texto descritivo para o botão principal de avanço
   let actionButtonText = 'Avançar Fase';
   if (isPlayerTurn) {
     switch (currentPhase) {
       case GamePhase.START:
-        actionButtonText = 'Iniciar Turno';
+        actionButtonText = 'Iniciando Turno...';
         break;
       case GamePhase.MAIN:
         actionButtonText = 'Fase de Debate ➔';
@@ -53,7 +60,13 @@ export const PhaseControls: React.FC<PhaseControlsProps> = ({
         actionButtonText = debateActive ? 'Passar no Debate' : 'Fase de Combate ➔';
         break;
       case GamePhase.COMBAT:
-        actionButtonText = 'Resolver Combate ➔';
+        if ((attacksCount ?? 0) === 0) {
+          actionButtonText = 'Pular Combate ➔';
+        } else if (hasReadyAttacker) {
+          actionButtonText = 'Concluir Ataques ➔';
+        } else {
+          actionButtonText = 'Resolver Combate ➔';
+        }
         break;
       case GamePhase.END:
         actionButtonText = 'Concluir Turno ↺';
@@ -61,14 +74,16 @@ export const PhaseControls: React.FC<PhaseControlsProps> = ({
     }
   } else {
     // Vez da IA
-    if (currentPhase === GamePhase.COMBAT) {
+    if (currentPhase === GamePhase.COMBAT && isPlayerExpected) {
       actionButtonText = 'Concluir Defesa / Resolver';
+    } else if (currentPhase === GamePhase.DEBATE && debateActive && isPlayerExpected) {
+      actionButtonText = 'Passar no Debate';
     } else {
       actionButtonText = 'Turno da IA...';
     }
   }
 
-  const isButtonDisabled = isAiThinking || (!isPlayerTurn && currentPhase !== GamePhase.COMBAT);
+  const isButtonDisabled = isAiThinking || !isPlayerExpected || currentPhase === GamePhase.START;
 
   return (
     <div className="scb-phase-controls">
@@ -96,9 +111,8 @@ export const PhaseControls: React.FC<PhaseControlsProps> = ({
               return (
                 <div
                   key={idx}
-                  className={`scb-energy-orb ${
-                    isFilled ? 'scb-orb-filled' : isUnlocked ? 'scb-orb-empty' : 'scb-orb-locked'
-                  }`}
+                  className={`scb-energy-orb ${isFilled ? 'scb-orb-filled' : isUnlocked ? 'scb-orb-empty' : 'scb-orb-locked'
+                    }`}
                   title={`Energia ${idx + 1}`}
                 />
               );

@@ -15,6 +15,7 @@ import {
   resolveDebate,
   validateResolveDebate,
 } from './debateSystem';
+import { activateHighlight, validateActivateHighlight } from './representativeSystem';
 import { GameEvent } from '../types/event';
 
 export interface ApplyActionOptions {
@@ -143,6 +144,14 @@ export function applyAction(
       return result;
     }
 
+    case ActionType.ACTIVATE_HIGHLIGHT: {
+      const result = activateHighlight(state, action, options?.cardRegistry);
+      if (result.success) {
+        result.state.history.push(action);
+      }
+      return result;
+    }
+
     case ActionType.ACTIVATE_ABILITY: {
       const val = validateAction(state, action, options);
       if (!val.valid) {
@@ -244,6 +253,11 @@ export function validateAction(
         }
       }
       return { valid: true };
+    }
+
+    case ActionType.ACTIVATE_HIGHLIGHT: {
+      const val = validateActivateHighlight(state, action, options?.cardRegistry);
+      return val.valid ? { valid: true } : { valid: false, error: val.error };
     }
 
     default:

@@ -1,6 +1,7 @@
 import React from 'react';
 import { CombatState, DebateState } from '../../../core/types/state';
 import { CardDefinition } from '../../../core/types/card';
+import { PlayerState } from '../../../core/types/player';
 
 export interface CentralZoneProps {
   combat: CombatState;
@@ -8,7 +9,9 @@ export interface CentralZoneProps {
   cardRegistry: Record<string, CardDefinition>;
   isAiThinking: boolean;
   activePlayerId: string;
+  expectedActor?: string | null;
   selectedBlockAttackIndex: number | null;
+  players?: Record<string, PlayerState>;
   onSelectAttackForBlock: (attackIndex: number) => void;
   onInspectCard: (cardDef: CardDefinition) => void;
   onPassDebate?: () => void;
@@ -20,13 +23,72 @@ export const CentralZone: React.FC<CentralZoneProps> = ({
   cardRegistry,
   isAiThinking,
   activePlayerId,
+  expectedActor,
   selectedBlockAttackIndex,
+  players,
   onSelectAttackForBlock,
   onInspectCard,
   onPassDebate,
 }) => {
   const hasCombat = combat.attacks && combat.attacks.length > 0;
   const hasDebate = debate.active || debate.actions.length > 0;
+
+  // Helper para resolver informações detalhadas e stats em tempo real do Estudante
+  const resolveCardInfo = (instanceId: string | undefined) => {
+    if (!instanceId) return null;
+
+    // 1. Buscar instância ativa no campo dos jogadores (stats reais atualizados com buffs/danos)
+    const onBoard =
+      players?.player1?.board.find((s) => s.instanceId === instanceId) ||
+      players?.player2?.board.find((s) => s.instanceId === instanceId);
+
+    if (onBoard) {
+      const def = cardRegistry[onBoard.definitionId];
+      return {
+        name: def?.name || onBoard.definitionId,
+        influence: onBoard.currentInfluence ?? def?.influence ?? 0,
+        morale: onBoard.currentMorale ?? def?.morale ?? 0,
+        definition: def,
+      };
+    }
+
+    // 2. Buscar por chave direta no cardRegistry
+    if (cardRegistry[instanceId]) {
+      const def = cardRegistry[instanceId];
+      return {
+        name: def.name,
+        influence: def.influence ?? 0,
+        morale: def.morale ?? 0,
+        definition: def,
+      };
+    }
+
+    // 3. Fallback: procurar no catálogo por substring de ID sem colisão
+    const defs = Object.values(cardRegistry).sort((a, b) => b.id.length - a.id.length);
+    const matched = defs.find(
+      (c) =>
+        instanceId === c.id ||
+        instanceId.includes(`_${c.id}_`) ||
+        instanceId.endsWith(`_${c.id}`) ||
+        instanceId.startsWith(`${c.id}_`)
+    );
+
+    if (matched) {
+      return {
+        name: matched.name,
+        influence: matched.influence ?? 0,
+        morale: matched.morale ?? 0,
+        definition: matched,
+      };
+    }
+
+    return {
+      name: instanceId,
+      influence: '?' as const,
+      morale: '?' as const,
+      definition: undefined,
+    };
+  };
 
   return (
     <div className="scb-central-zone">
@@ -93,15 +155,9 @@ export const CentralZone: React.FC<CentralZoneProps> = ({
 
           <div className="scb-combat-clashes">
             {combat.attacks.map((attack, idx) => {
-              // Atacante
-              const attackerDef = Object.values(cardRegistry).find(
-                (c) => attack.attackerInstanceId.includes(c.id)
-              );
-              // Bloqueador se houver
-              const blockerDef = attack.blockerInstanceId
-                ? Object.values(cardRegistry).find((c) =>
-                    attack.blockerInstanceId!.includes(c.id)
-                  )
+              const attackerInfo = resolveCardInfo(attack.attackerInstanceId);
+              const blockerInfo = attack.blockerInstanceId
+                ? resolveCardInfo(attack.blockerInstanceId)
                 : null;
 
               const isTargetRep =
@@ -121,10 +177,10 @@ export const CentralZone: React.FC<CentralZoneProps> = ({
                   <div className="scb-clash-unit scb-clash-attacker">
                     <span className="scb-unit-role">Atacante</span>
                     <span className="scb-unit-name">
-                      {attackerDef?.name || 'Estudante'}
+                      {attackerInfo?.name || 'Estudante'}
                     </span>
                     <span className="scb-unit-stat">
-                      ⚔ {attackerDef?.influence ?? '?'}
+                      ⚔ {attackerInfo?.influence ?? '?'}
                     </span>
                   </div>
 
@@ -141,10 +197,10 @@ export const CentralZone: React.FC<CentralZoneProps> = ({
                           🛡 Bloqueador
                         </span>
                         <span className="scb-unit-name">
-                          {blockerDef?.name || 'Defensor'}
+                          {blockerInfo?.name || attack.blockerInstanceId}
                         </span>
                         <span className="scb-unit-stat">
-                          ♥ {blockerDef?.morale ?? '?'}
+                          ♥ {blockerInfo?.morale ?? '?'}
                         </span>
                       </>
                     ) : (
@@ -153,18 +209,20 @@ export const CentralZone: React.FC<CentralZoneProps> = ({
                           🎯 Alvo
                         </span>
                         <span className="scb-unit-name">
-                          {isTargetRep ? 'Representante' : 'Estudante'}
+                          {isTargetRep ? 'Representante' : 'Estudante (Provocação)'}
                         </span>
-                        <button
-                          type="button"
-                          className="scb-btn-small scb-btn-block"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectAttackForBlock(idx);
-                          }}
-                        >
-                          Definir Bloqueio
-                        </button>
+                        {activePlayerId === 'player2' && (
+                          <button
+                            type="button"
+                            className="scb-btn-small scb-btn-block"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectAttackForBlock(idx);
+                            }}
+                          >
+                            Definir Bloqueio
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -189,9 +247,9 @@ export const CentralZone: React.FC<CentralZoneProps> = ({
                 <span className="scb-spinner" />
                 <span>IA do Grêmio analisando jogada...</span>
               </div>
-            ) : activePlayerId === 'player1' ? (
+            ) : expectedActor === 'player1' ? (
               <div className="scb-indicator-player-turn">
-                <span>✦ Sua Vez de Jogar ✦</span>
+                <span>✦ Sua Vez de {activePlayerId === 'player1' ? 'Jogar' : 'Responder / Defender'} ✦</span>
               </div>
             ) : (
               <div className="scb-indicator-ai-turn">

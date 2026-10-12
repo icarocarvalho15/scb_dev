@@ -60,6 +60,8 @@ export interface AttackDeclaration {
 export interface CombatState {
   active: boolean;
   attacks: AttackDeclaration[];
+  attackersDeclared?: boolean;
+  defenderPassed?: boolean;
 }
 
 /**
