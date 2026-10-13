@@ -1,6 +1,6 @@
 # School Card Battle (SCB) 🃏🏫
 
-![Status](https://img.shields.io/badge/Status-FROZEN_Alpha_1.0.3-success)
+![Status](https://img.shields.io/badge/Status-FROZEN_Alpha_0.1.3-success)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)
 ![Vite](https://img.shields.io/badge/Bundler-Vite-purple)
 ![Architecture](https://img.shields.io/badge/Architecture-Engine_First-orange)
@@ -12,7 +12,7 @@ Construído sob a rigorosa arquitetura **Engine-First**, a lógica do SCB é per
 
 ---
 
-## 🚀 Versão Congelada: Alpha 1.0.3 (Completo)
+## 🚀 Versão Congelada: Alpha 0.1.3 (Completo)
 
 O projeto atingiu seu marco estrutural máximo para a fase Alpha: **Partida Completa de Ponta a Ponta (Humano vs IA) Estável no Navegador.** 
 
@@ -80,7 +80,7 @@ O projeto atingiu seu marco estrutural máximo para a fase Alpha: **Partida Comp
 
 ## 📝 Próximas Fases (Planejamento Futuro)
 
-- [ ] **Fase 12 & 13: Polish & Alpha Release** — Refinamento de UX, sistema de Mulligan e congelamento definitivo da versão Alpha 1.0.
+- [ ] **Fase 14: Polish & Beta Release** — Refinamento de UX, VFX e algumas outras melhorias.
 
 ---
 
