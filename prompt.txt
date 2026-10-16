@@ -1,87 +1,9 @@
-Assuma as responsabilidades conjuntas de Game Core Engineer e UI Engineer, conforme definidos em @docs/agents/SCB_Game_Core_Engineer.md e @docs/agentes/SCB_UI_Engineer.md.
+Assuma o papel de ORCHESTRATOR / TECH LEAD conforme definido no arquivo @docs/agents/SCB_Orchestrator.md. Leia as diretrizes globais em @docs/agents/SKILL.md.
 
-Seu foco será em:
-Implementar e testar ActionType.MULLIGAN na Engine (validateAction, applyAction), garantindo determinismo, embaralhamento via rngSeed e suíte de testes unitários verdes.
-Criar o MulliganModal.tsx, integrá-lo no useGameController.ts, aplicar os estilos no index.css e polir a UX final.
-Rodar os testes E2E, simulações completas de partidas e emitir o SCB_ALPHA_STATUS.md para fechamento definitivo do Alpha 1.0.
+Estou retornando para esse ambiente de desenvolvimento e sincronizamos o repositório via Git. Preciso que você recupere o contexto exato do projeto atual, ignorando históricos antigos.
 
-Briefing Formal — Diretiva de Delegação (Fases 12 / 13)
+Leia o arquivo @docs/rules/SCB_PROJECT_STATUS.md e o @docs/rules/SCB_QA_REPORT.md e outros arquivos relacionados ao andamento do projeto.
 
-Missão: Mulligan Parcial, Polimento de UI/UX e Fechamento do Alpha 1.0
-Status: IN_PROGRESS
-Agente Responsável: Game Core Engineer & UI Engineer
-Supervisor: Orchestrator / Tech Lead
+Faça uma varredura rápida no diretório para confirmar que o código está alinhado com esse arquivos.
 
-Documentação Obrigatória:
-@docs/rules/SCB_Rules.md (Seção 4, 5 e 6)
-@docs/rules/SCB_GDD.md (Seções 4, 6 e 12)
-@docs/rules/SCB_Architecture.md (Seções 5, 6, 13 e 18)
-@docs/rules/SCB_QA_REPORT.md
-@docs/rules/SCB_PROJECT_STATUS.md
-
-1. Escopo e Objetivos da Tarefa
-O objetivo é implementar o sistema de Mulligan de forma puramente orientada a regras e eventos (Engine First), integrá-lo à IA e à interface com um modal estético anime/glassmorphism, aplicar os toques finais de polimento de UX e preparar o repositório para o congelamento da versão Alpha 1.0.
-
-1.1 Critérios do Sistema de Mulligan (Regras Oficiais)
-Momento de Ocorrência:
-Ocorre imediatamente após a criação da partida e compra da mão inicial de 4 cartas, antes do início do Turno 1 (ou como etapa de abertura do Turno 1 pré-Main Phase).
-
-Parcial e Flexível:
-Cada jogador (Humano e IA) avalia suas 4 cartas e pode selecionar de $0$ a $4$ cartas para substituir.
-Selecionar $0$ cartas equivale a "Manter Mão" (Skip Mulligan).
-
-Oportunidade Única:
-Cada jogador só pode realizar o Mulligan uma única vez por partida (hasMulliganed = true).
-
-Mecânica de Troca Determinística:
-As cartas descartadas são devolvidas ao baralho e substituídas por igual quantidade de novas compras do topo do deck.
-O baralho é reembaralhado deterministicamente utilizando o rngSeed do estado.
-O total de cartas na mão do jogador permanece exatamente 4 após o Mulligan.
-
-Autonomia da IA (AIPlayer):
-A IA deve possuir uma rotina heurística simples e determinística para o Mulligan (ex.: descartar cartas de custo $> 3$ ou cartas situacionais caso não possua estudantes jogáveis de custo 1-2 na mão inicial).
-O Mulligan da IA não deve depender de cliques do usuário nem gerar soft-locks.
-
-1.2 Critérios de Polimento Estético e UI/UX (Alpha 1.0)
-Modal de Mulligan (MulliganModal.tsx):
-Apresentação em destaque das 4 cartas com toggle visual de seleção ("Marcar para trocar").
-
-Indicador de estado claro, com botões:
-"Substituir X Cartas" (quando 1 ou mais estiverem selecionadas);
-"Manter Mão" (quando nenhuma estiver selecionada).
-Transição suave para o tabuleiro após a confirmação de ambos os lados.
-
-Design System & Micro-interações:
-Revisão visual no index.css mantendo estética anime de prestígio acadêmico (gradientes sutis, glassmorphism, sombras neon e bordas refinadas).
-Garantir que o handoff entre o Mulligan e a MAIN phase do primeiro turno preserve a automação da START phase sem "piscar" ou congelar.
-Refinamento dos badges de status no tabuleiro (Inércia, Prontidão, Bloqueio Livre e Destaque).
-
-2. Restrições Técnicas & Arquitetura
-Princípio Engine First: A UI nunca altera o estado de cartas diretamente. Qualquer substituição deve ser despachada como ActionType.MULLIGAN via applyAction e validada por validateAction.
-Imutabilidade Estrita: Não mutar arrays de cartas no GameState; gerar sempre novos clones de estado puros.
-Preservação de Regras: Nenhuma alteração em regras já homologadas (Diplomacia no T1, Bloqueio Livre, Destaque custando 0 de Energia, limite de 6 no campo, limite de 8 na mão).
-Zero Regressão: Todos os 226 testes existentes devem continuar verdes.
-
-3. Arquivos Autorizados para Modificação
-src/core/engine/gameEngine.ts (adicionar suporte a ActionType.MULLIGAN)
-src/core/engine/mulliganSystem.ts (novo módulo dedicado caso necessário)
-src/ai/actionGenerator.ts e src/ai/aiPlayer.ts (decisão heurística de Mulligan da IA)
-src/ui/components/Modals/MulliganModal.tsx (novo componente)
-src/ui/hooks/useGameController.ts (orquestração do setup e do modal)
-src/ui/components/Board/GameBoard.tsx (renderização do modal)
-src/index.css (estilos do modal e polimento de UI)
-tests/core/mulliganSystem.test.ts (novos testes)
-
-4. Testes Obrigatórios e Critérios de Aceite
-Testes Unitários da Engine:
-Validar Mulligan com 0 cartas (manter mão), com 1 a 4 cartas substituídas, e rejeição de tentativa repetida (hasMulliganed = true -> ALREADY_MULLIGANED). Validar que o tamanho da mão permanece exatamente 4 após o Mulligan.
-
-Testes de IA:
-Garantir que a simulação de partidas (aiSimulation.test.ts) opere perfeitamente com a decisão de Mulligan inclusa sem despachar ações ilegais.
-
-Entregável Final:
-Emissão de @docs/rules/SCB_ALPHA_STATUS.md formalizando o congelamento da versão Alpha 1.0.
-Atualização de @docs/rules/SCB_PROJECT_STATUS.md.
-
-Instruções de Execução:
-Pense passo a passo. Implemente o código necessário focando no Princípio Engine First e na Imutabilidade Estrita. Quando terminar e os testes estiverem passando, responda estritamente com o relatório de conclusão no formato exigido.
+Após recuperar o contexto, não escreva código. Apenas me dê um breve resumo confirmando que você entendeu onde estamos e o que podemos fazer de agora em diante.
